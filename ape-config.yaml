@@ -8,6 +8,13 @@ plugins:
 
 solidity:
   version: "0.8.28"
+  import_remapping:
+    - "@openzeppelin/contracts=.cache/OpenZeppelin/openzeppelin-contracts@v5.2.0/contracts"
+
+dependencies:
+  - name: OpenZeppelin
+    github: OpenZeppelin/openzeppelin-contracts
+    version: v5.2.0
 
 networks:
   custom:

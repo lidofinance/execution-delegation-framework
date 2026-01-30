@@ -7,8 +7,8 @@ EXEC_CMD_INTERACTIVE = docker exec -w $(DEV_WORKDIR) -it $(DEV_CONTAINER_NAME)
 up:
 	@if [ -z "$$(docker ps -q -f name=$(DEV_CONTAINER_NAME))" ]; then \
 		echo "No container found, starting..."; \
-		docker build --target development -t $(DEV_IMAGE) .; \
-		docker run -dit --env-file .env --name $(DEV_CONTAINER_NAME) -v $$(pwd):$(DEV_WORKDIR) $(DEV_IMAGE) sleep infinity; \
+		docker build --platform linux/amd64 --target development -t $(DEV_IMAGE) .; \
+		docker run --platform linux/amd64 -dit --env-file .env --name $(DEV_CONTAINER_NAME) -v $$(pwd):$(DEV_WORKDIR) $(DEV_IMAGE) sleep infinity; \
 	else \
 		echo "Container $(DEV_CONTAINER_NAME) already running"; \
 	fi
@@ -22,7 +22,7 @@ rebuild:
 		echo "Removing stopped container..."; \
 		docker rm $(DEV_CONTAINER_NAME); \
 	fi
-	docker build --no-cache --target development -t $(DEV_IMAGE) .
+	docker build --platform linux/amd64 --no-cache --target development -t $(DEV_IMAGE) .
 	$(MAKE) up
 
 sh: up
@@ -34,4 +34,7 @@ ipython: up
 uv-lock: up
 	$(EXEC_CMD) uv lock --no-upgrade
 
-.PHONY: up rebuild down sh ipython uv-lock
+compile: up
+	$(EXEC_CMD) uv run ape compile
+
+.PHONY: up rebuild down sh ipython uv-lock compile

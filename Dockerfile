@@ -6,6 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -20,6 +22,12 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 
 FROM base AS development
+
+# Install Foundry (for contract compilation and testing)
+RUN curl -L https://foundry.paradigm.xyz | bash && \
+    /root/.foundry/bin/foundryup
+
+ENV PATH="/root/.foundry/bin:$PATH"
 
 RUN uv sync --frozen --no-install-project
 

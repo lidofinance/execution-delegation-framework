@@ -384,7 +384,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ape-foundry", specifier = ">=0.8.9" },
+    { name = "ape-foundry", specifier = ">=0.8.11" },
     { name = "ape-solidity", specifier = ">=0.8.5" },
     { name = "eth-ape", specifier = ">=0.8.47" },
 ]
