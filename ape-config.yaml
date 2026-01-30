@@ -1,8 +1,8 @@
 name: delegated-execution-authority
 
 plugins:
-  - name: vyper
-    version: 0.8.9
+  - solidity:
+    version: 0.8.14
   - name: foundry
     version: 0.8.9
 

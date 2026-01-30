@@ -1,21 +1,9 @@
 [project]
-name = "delegated-execution-authority"
+name = "delegation-execution-authority"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "F4ever",email = "raman.s@lido.fi"}
-]
-license = {text = "GLP3.0"}
 readme = "README.md"
-requires-python = ">=3.11,<4"
+requires-python = ">=3.14"
 dependencies = [
-    "eth-ape (>=0.8.36,<0.9.0)",
-    "eth-utils (>=2.1.0,<3.0.0)",
-    "eth-abi (>=5.1.0,<6.0.0)",
-    "vyper==0.4.3"
+    "eth-ape>=0.8.47",
 ]
-
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
