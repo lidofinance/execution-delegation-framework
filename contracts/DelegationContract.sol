@@ -41,6 +41,7 @@ contract DelegationContract is IDelegationContract {
         if (_delegatee == _admin) revert AdminCannotBeDelegatee();
 
         admin = _admin;
+        emit AdminChanged(address(0), _admin);
 
         if (_delegatee != address(0)) {
             delegatee = _delegatee;
