@@ -37,4 +37,7 @@ uv-lock: up
 compile: up
 	$(EXEC_CMD) uv run ape compile
 
-.PHONY: up rebuild down sh ipython uv-lock compile
+lint-solidity: compile
+	$(EXEC_CMD) solhint 'contracts/**/*.sol'
+
+.PHONY: up rebuild down sh ipython uv-lock compile lint-solidity

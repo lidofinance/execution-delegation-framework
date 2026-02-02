@@ -29,6 +29,12 @@ RUN curl -L https://foundry.paradigm.xyz | bash && \
 
 ENV PATH="/root/.foundry/bin:$PATH"
 
+# Install Node.js and solhint (Solidity linter)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g solhint && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN uv sync --frozen --no-install-project
 
 
