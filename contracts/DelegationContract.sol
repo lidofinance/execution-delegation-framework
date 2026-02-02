@@ -107,7 +107,11 @@ contract DelegationContract is IDelegationContract {
         (success, result) = target.call(callData);
 
         if (!success) {
-            revert DelegatecallFailed();
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                // Bubble up the revert reason from the target contract
+                revert(add(result, 32), mload(result))
+            }
         }
     }
 }

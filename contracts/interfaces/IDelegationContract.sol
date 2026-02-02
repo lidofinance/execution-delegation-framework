@@ -28,7 +28,6 @@ interface IDelegationContract {
     error TargetNotContract();
     error CannotCallSelf();
     error AdminCannotBeDelegatee();
-    error DelegatecallFailed();
 
     /// @notice Returns the admin address
     /// @return The address of the admin (cold wallet or multisig owner)
