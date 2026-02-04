@@ -1,10 +1,5 @@
-import sys
-from pathlib import Path
-
 import pytest
-from ape import accounts, networks
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
+from ape import networks
 
 from services import FactoryDeployerService
 
@@ -51,5 +46,7 @@ def delegation_factory_contract(deployer):
 @pytest.fixture
 def delegation_contract(delegation_factory_contract, admin, delegatee, project):
     """Deploy DelegationContract via factory."""
-    tx = delegation_factory_contract.deployDelegation(admin.address, delegatee.address, sender=admin)
+    tx = delegation_factory_contract.deployDelegation(
+        admin.address, delegatee.address, sender=admin
+    )
     return project.DelegationContract.at(tx.return_value)

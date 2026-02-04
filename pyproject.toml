@@ -10,3 +10,21 @@ dependencies = [
     "ape-foundry>=0.8.11",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.15.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["services", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+

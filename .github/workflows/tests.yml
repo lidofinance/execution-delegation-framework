@@ -27,6 +27,11 @@ jobs:
         run: |
           docker run --rm -v ${{ github.workspace }}:/app -w /app $DEV_IMAGE solhint 'contracts/**/*.sol'
 
+      - name: Lint Python
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/app -w /app $DEV_IMAGE uv run ruff check .
+          docker run --rm -v ${{ github.workspace }}:/app -w /app $DEV_IMAGE uv run ruff format --check .
+
       - name: Run tests
         run: |
           docker run --rm -e MAINNET_RPC_URI=$MAINNET_RPC_URI -v ${{ github.workspace }}:/app -w /app $DEV_IMAGE uv run ape test -v

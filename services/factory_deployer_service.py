@@ -13,7 +13,6 @@ class DeploymentResult:
 
 
 class FactoryDeployerService:
-
     def __init__(self, account: AccountAPI):
         self._account = account
 

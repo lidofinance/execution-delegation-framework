@@ -7,11 +7,12 @@ ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 @pytest.mark.fork
 class TestDelegationFactory:
-
     def test_deploy_delegation__valid_admin_and_delegatee__creates_contract(
         self, delegation_factory_contract, admin, delegatee
     ):
-        tx = delegation_factory_contract.deployDelegation(admin.address, delegatee.address, sender=admin)
+        tx = delegation_factory_contract.deployDelegation(
+            admin.address, delegatee.address, sender=admin
+        )
         delegation_address = tx.return_value
 
         delegation = project.DelegationContract.at(delegation_address)
@@ -33,11 +34,11 @@ class TestDelegationFactory:
         assert delegation.admin() == admin.address
         assert delegation.delegatee() == ZERO_ADDRESS
 
-    def test_deploy_delegation__zero_admin__reverts(
-        self, delegation_factory_contract, delegatee
-    ):
+    def test_deploy_delegation__zero_admin__reverts(self, delegation_factory_contract, delegatee):
         with ape.reverts(project.DelegationContract.ZeroAddress):
-            delegation_factory_contract.deployDelegation(ZERO_ADDRESS, delegatee.address, sender=delegatee)
+            delegation_factory_contract.deployDelegation(
+                ZERO_ADDRESS, delegatee.address, sender=delegatee
+            )
 
     def test_deploy_delegation__admin_equals_delegatee__reverts(
         self, delegation_factory_contract, admin
@@ -48,8 +49,12 @@ class TestDelegationFactory:
     def test_deploy_delegation__multiple_deployments__creates_unique_contracts(
         self, delegation_factory_contract, admin, delegatee, deployer
     ):
-        tx1 = delegation_factory_contract.deployDelegation(admin.address, delegatee.address, sender=admin)
-        tx2 = delegation_factory_contract.deployDelegation(deployer.address, admin.address, sender=deployer)
+        tx1 = delegation_factory_contract.deployDelegation(
+            admin.address, delegatee.address, sender=admin
+        )
+        tx2 = delegation_factory_contract.deployDelegation(
+            deployer.address, admin.address, sender=deployer
+        )
 
         delegation1_address = tx1.return_value
         delegation2_address = tx2.return_value

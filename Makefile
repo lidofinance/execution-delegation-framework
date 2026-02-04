@@ -43,6 +43,14 @@ compile: up
 lint-solidity: compile
 	$(EXEC_CMD) solhint 'contracts/**/*.sol'
 
+lint-python: up
+	$(EXEC_CMD) uv run ruff check .
+	$(EXEC_CMD) uv run ruff format --check .
+
+format-python: up
+	$(EXEC_CMD) uv run ruff check --fix .
+	$(EXEC_CMD) uv run ruff format .
+
 test: compile
 	$(EXEC_CMD) uv run ape test -v
 
@@ -52,4 +60,4 @@ deploy-testnet: compile
 deploy-mainnet: compile
 	$(EXEC_CMD_INTERACTIVE) uv run ape run deploy_factory --network ethereum:mainnet:node --publish
 
-.PHONY: up rebuild down sh console uv-lock compile lint-solidity test deploy-testnet deploy-mainnet
+.PHONY: up rebuild down sh console uv-lock compile lint-solidity lint-python format-python test deploy-testnet deploy-mainnet

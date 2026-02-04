@@ -52,7 +52,6 @@ def mock_hash_consensus(deployer):
 
 @pytest.mark.fork
 class TestAssignDelegate:
-
     def test_assign_delegate__valid_delegate__updates_delegatee(
         self, delegation_contract, admin, accounts
     ):
@@ -65,27 +64,19 @@ class TestAssignDelegate:
         assert len(logs) == 1
         assert logs[0].delegate == new_delegatee.address
 
-    def test_assign_delegate__zero_address__reverts(
-        self, delegation_contract, admin
-    ):
+    def test_assign_delegate__zero_address__reverts(self, delegation_contract, admin):
         with ape.reverts(project.DelegationContract.ZeroAddress):
             delegation_contract.assignDelegate(ZERO_ADDRESS, sender=admin)
 
-    def test_assign_delegate__same_delegatee__reverts(
-        self, delegation_contract, admin, delegatee
-    ):
+    def test_assign_delegate__same_delegatee__reverts(self, delegation_contract, admin, delegatee):
         with ape.reverts(project.DelegationContract.SameDelegatee):
             delegation_contract.assignDelegate(delegatee.address, sender=admin)
 
-    def test_assign_delegate__admin_as_delegatee__reverts(
-        self, delegation_contract, admin
-    ):
+    def test_assign_delegate__admin_as_delegatee__reverts(self, delegation_contract, admin):
         with ape.reverts(project.DelegationContract.AdminCannotBeDelegatee):
             delegation_contract.assignDelegate(admin.address, sender=admin)
 
-    def test_assign_delegate__not_admin__reverts(
-        self, delegation_contract, delegatee, accounts
-    ):
+    def test_assign_delegate__not_admin__reverts(self, delegation_contract, delegatee, accounts):
         new_delegatee = accounts[3]
         with ape.reverts(project.DelegationContract.NotAdmin):
             delegation_contract.assignDelegate(new_delegatee.address, sender=delegatee)
@@ -93,7 +84,6 @@ class TestAssignDelegate:
 
 @pytest.mark.fork
 class TestRevokeDelegate:
-
     def test_revoke_delegate__has_delegatee__clears_delegatee(
         self, delegation_contract, admin, delegatee
     ):
@@ -104,25 +94,20 @@ class TestRevokeDelegate:
         assert len(logs) == 1
         assert logs[0].delegate == delegatee.address
 
-    def test_revoke_delegate__no_delegatee__reverts(
-        self, delegation_factory_contract, admin
-    ):
+    def test_revoke_delegate__no_delegatee__reverts(self, delegation_factory_contract, admin):
         tx = delegation_factory_contract.deployDelegation(admin.address, ZERO_ADDRESS, sender=admin)
         delegation = project.DelegationContract.at(tx.return_value)
 
         with ape.reverts(project.DelegationContract.NoDelegatee):
             delegation.revokeDelegate(sender=admin)
 
-    def test_revoke_delegate__not_admin__reverts(
-        self, delegation_contract, delegatee
-    ):
+    def test_revoke_delegate__not_admin__reverts(self, delegation_contract, delegatee):
         with ape.reverts(project.DelegationContract.NotAdmin):
             delegation_contract.revokeDelegate(sender=delegatee)
 
 
 @pytest.mark.fork
 class TestChangeAdmin:
-
     def test_change_admin__valid_new_admin__updates_admin(
         self, delegation_contract, admin, accounts
     ):
@@ -136,21 +121,15 @@ class TestChangeAdmin:
         assert logs[0].oldAdmin == admin.address
         assert logs[0].newAdmin == new_admin.address
 
-    def test_change_admin__zero_address__reverts(
-        self, delegation_contract, admin
-    ):
+    def test_change_admin__zero_address__reverts(self, delegation_contract, admin):
         with ape.reverts(project.DelegationContract.ZeroAddress):
             delegation_contract.changeAdmin(ZERO_ADDRESS, sender=admin)
 
-    def test_change_admin__same_admin__reverts(
-        self, delegation_contract, admin
-    ):
+    def test_change_admin__same_admin__reverts(self, delegation_contract, admin):
         with ape.reverts(project.DelegationContract.SameAdmin):
             delegation_contract.changeAdmin(admin.address, sender=admin)
 
-    def test_change_admin__not_admin__reverts(
-        self, delegation_contract, delegatee, accounts
-    ):
+    def test_change_admin__not_admin__reverts(self, delegation_contract, delegatee, accounts):
         new_admin = accounts[3]
         with ape.reverts(project.DelegationContract.NotAdmin):
             delegation_contract.changeAdmin(new_admin.address, sender=delegatee)
@@ -158,7 +137,6 @@ class TestChangeAdmin:
 
 @pytest.mark.fork
 class TestIsValidSignature:
-
     def test_is_valid_signature__valid_signature__returns_magic_value(
         self, delegation_contract, delegatee
     ):
@@ -201,7 +179,6 @@ class TestIsValidSignature:
 
 @pytest.mark.fork
 class TestExecute:
-
     def test_execute__submit_report_as_member__succeeds(
         self, delegation_contract, mock_hash_consensus, delegatee, deployer
     ):
@@ -221,25 +198,19 @@ class TestExecute:
         # Verify report was submitted from delegation contract
         assert mock_hash_consensus.reports(slot, delegation_contract.address) == report
 
-    def test_execute__zero_target__reverts(
-        self, delegation_contract, delegatee
-    ):
+    def test_execute__zero_target__reverts(self, delegation_contract, delegatee):
         data = encode(["address", "bytes"], [ZERO_ADDRESS, b""])
 
         with ape.reverts(project.DelegationContract.ZeroAddress):
             delegation_contract.execute(data, sender=delegatee)
 
-    def test_execute__self_call__reverts(
-        self, delegation_contract, delegatee
-    ):
+    def test_execute__self_call__reverts(self, delegation_contract, delegatee):
         data = encode(["address", "bytes"], [delegation_contract.address, b""])
 
         with ape.reverts(project.DelegationContract.CannotCallSelf):
             delegation_contract.execute(data, sender=delegatee)
 
-    def test_execute__non_contract_target__reverts(
-        self, delegation_contract, delegatee
-    ):
+    def test_execute__non_contract_target__reverts(self, delegation_contract, delegatee):
         # Use a random address that definitely has no code
         random_eoa = "0x1234567890123456789012345678901234567890"
         data = encode(["address", "bytes"], [random_eoa, b""])
