@@ -51,6 +51,9 @@ format-python: up
 	$(EXEC_CMD) uv run ruff check --fix .
 	$(EXEC_CMD) uv run ruff format .
 
+typecheck: up
+	$(EXEC_CMD) uv run pyright
+
 test: compile
 	$(EXEC_CMD) uv run ape test -v
 
@@ -60,4 +63,4 @@ deploy-testnet: compile
 deploy-mainnet: compile
 	$(EXEC_CMD_INTERACTIVE) uv run ape run deploy_factory --network ethereum:mainnet:node --publish
 
-.PHONY: up rebuild down sh console uv-lock compile lint-solidity lint-python format-python test deploy-testnet deploy-mainnet
+.PHONY: up rebuild down sh console uv-lock compile lint-solidity lint-python format-python typecheck test deploy-testnet deploy-mainnet

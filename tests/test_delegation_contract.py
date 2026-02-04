@@ -1,7 +1,7 @@
 import ape
 import pytest
 from ape import compilers, project
-from eth_abi import encode
+from eth_abi.abi import encode
 from eth_account import Account
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
