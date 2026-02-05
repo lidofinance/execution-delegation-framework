@@ -182,6 +182,13 @@ class TestIsValidSignature:
 
         assert result.hex() == EIP1271_INVALID[2:]
 
+    def test_is_valid_signature__malformed_signature__reverts(self, delegation_contract):
+        message_hash = b"\x11" * 32
+        malformed_signature = b"\x00" * 65
+
+        with ape.reverts():
+            delegation_contract.isValidSignature(message_hash, malformed_signature)
+
 
 @pytest.mark.fork
 class TestExecute:

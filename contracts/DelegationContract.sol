@@ -86,6 +86,8 @@ contract DelegationContract is IDelegationContract {
 
         address recovered = hash.recover(signature);
 
+        if (recovered == address(0)) return EIP1271_INVALID;
+
         if (recovered == delegatee) {
             return EIP1271_MAGIC_VALUE;
         }

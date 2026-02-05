@@ -38,7 +38,7 @@ uv-lock: up
 	$(EXEC_CMD) uv lock --no-upgrade
 
 compile: up
-	$(EXEC_CMD) uv run ape compile
+	$(EXEC_CMD) uv run ape compile --force
 
 lint-solidity: compile
 	$(EXEC_CMD) solhint 'contracts/**/*.sol'
