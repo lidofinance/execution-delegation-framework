@@ -105,6 +105,18 @@ class TestRevokeDelegate:
         with ape.reverts(project.DelegationContract.NotAdmin):
             delegation_contract.revokeDelegate(sender=delegatee)
 
+    def test_revoke_delegate__after_revoke__delegatee_cannot_execute(
+        self, delegation_contract, mock_hash_consensus, admin, delegatee, deployer
+    ):
+        mock_hash_consensus.addMember(delegation_contract.address, sender=deployer)
+        delegation_contract.revokeDelegate(sender=admin)
+
+        call_data = mock_hash_consensus.submitReport.encode_input(123, b"\x01" * 32, 1)
+        data = encode(["address", "bytes"], [mock_hash_consensus.address, call_data])
+
+        with ape.reverts(project.DelegationContract.NotDelegatee):
+            delegation_contract.execute(data, sender=delegatee)
+
 
 @pytest.mark.fork
 class TestChangeAdmin:
