@@ -23,9 +23,9 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 FROM base AS development
 
-# Install Foundry (pinned version for reproducibility)
+# Install Foundry
 RUN curl -L https://foundry.paradigm.xyz | bash && \
-    /root/.foundry/bin/foundryup -v v1.6.0
+    /root/.foundry/bin/foundryup
 
 ENV PATH="/root/.foundry/bin:$PATH"
 
