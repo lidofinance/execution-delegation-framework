@@ -31,6 +31,9 @@ node:
 
 etherscan:
   ethereum:
+    mainnet:
+      uri: https://etherscan.io
+      api_uri: https://api.etherscan.io/v2/api?chainid=1
     hoodi:
       uri: https://hoodi.etherscan.io
       api_uri: https://api.etherscan.io/v2/api?chainid=560048
