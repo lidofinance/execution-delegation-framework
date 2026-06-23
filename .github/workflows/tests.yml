@@ -17,12 +17,11 @@ permissions:
   security-events: write
 
 jobs:
-  security:
-    uses: lidofinance/linters/.github/workflows/security.yml@master
+  # security:
+  #   uses: lidofinance/linters/.github/workflows/security.yml@master
   actions:
     uses: lidofinance/linters/.github/workflows/actions.yml@master
 
-  # Maybe to make it reusable workflow instead?
   bootstrap:
     name: Bootstrap environment
     runs-on: ubuntu-latest
