@@ -115,24 +115,17 @@ Copy `.env.example` to `.env` and fill in the values:
 cp .env.example .env
 ```
 
-| Variable | Description |
-|----------|-------------|
-| `DEPLOYER_PRIVATE_KEY` | Private key for deploying contracts |
-| `MAINNET_RPC_URI` | Ethereum mainnet RPC endpoint |
-| `HOODI_RPC_URI` | Hoodi testnet RPC endpoint |
-| `ETHERSCAN_API_KEY` | Etherscan API key for contract verification |
+Create account for deploy
+
+```bash
+cast wallet import --interactive Deployer
+```
 
 ### 2. Deploy DelegationFactory
 
 ```bash
-# Testnet (Hoodi)
-make deploy-testnet
-
-# Mainnet
-make deploy-mainnet
+just deploy-live ----account Deployer
 ```
-
-The `--publish` flag is included inside Makefile by default to verify contracts on Etherscan.
 
 ### 3. Deploy DelegationContract
 
@@ -166,33 +159,23 @@ After deploying your DelegationContract:
 
 ## Development
 
-All commands run inside Docker container. Start the dev environment first:
+### Setup
 
 ```bash
-make up          # Start dev container
-make sh          # Shell access to container
+just deps        # Install dependencies
+just deps-dev    # Install development dependencies
 ```
 
 ### Build & Test
 
 ```bash
-make compile     # Compile Solidity contracts
-make test        # Run tests
+just build        # Compile Solidity contracts
+just test-unit    # Run tests
 ```
 
 ### Linting & Formatting
 
 ```bash
-make lint-solidity   # Lint Solidity with solhint
-make lint-python     # Lint Python with ruff
-make format-python   # Format Python with ruff
-make typecheck       # Type check Python with pyright
+just lint        # Run linter
+just lint-fix    # Run linter and fix formatting issues
 ```
-
-### Console
-
-```bash
-make console         # Ape console
-make console-fork    # Ape console with mainnet fork
-```
-
