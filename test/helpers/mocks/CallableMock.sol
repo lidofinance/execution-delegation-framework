@@ -13,4 +13,8 @@ contract CallableMock {
     function revertsWhenCalled() external pure {
         revert AlwaysReverts();
     }
+
+    function returnsMsgSender() external view returns (address) {
+        return msg.sender;
+    }
 }

@@ -2,16 +2,6 @@ set dotenv-load
 
 # Restrict Foundry parallelism by default; override from the caller when needed.
 export FOUNDRY_THREADS := env("FOUNDRY_THREADS", "4")
-export FOUNDRY_COMPUTE_UNITS_PER_SECOND := env("FOUNDRY_COMPUTE_UNITS_PER_SECOND", "200")
-
-# Make forked Anvil more tolerant to transient upstream RPC failures.
-export ANVIL_FORK_RETRIES := env("ANVIL_FORK_RETRIES", "15")
-export ANVIL_FORK_RETRY_BACKOFF := env("ANVIL_FORK_RETRY_BACKOFF", "1000")
-export ANVIL_FORK_TIMEOUT := env("ANVIL_FORK_TIMEOUT", "90000")
-
-# Make forked Forge tests more tolerant to transient upstream RPC failures.
-export FOUNDRY_FORK_RETRIES := env("FOUNDRY_FORK_RETRIES", "15")
-export FOUNDRY_FORK_RETRY_BACKOFF := env("FOUNDRY_FORK_RETRY_BACKOFF", "1000")
 
 chain := env_var_or_default("CHAIN", "mainnet")
 chain_script_suffix := if chain == "mainnet" {
@@ -119,12 +109,14 @@ coverage-lcov *args:
 
 # Deployment
 
+# Deploy to local anvil instance
 deploy *args:
     mkdir -p {{artifacts_local_dir}}
     ARTIFACTS_DIR={{artifacts_local_dir}} \
         just _deploy-generic {{deploy_script_path}} {{anvil_rpc_url}} {{args}}
     just _finalize-broadcast-artifacts {{deploy_script_name}} {{anvil_rpc_url}} "" "run-latest.json" {{local_deploy_config_path}}
 
+# Deploy to live network (mainnet or hoodi)
 deploy-live *args:
     just _warn "The current `tput bold`chain={{chain}}`tput sgr0` with the following rpc url: $RPC_URL"
     mkdir -p {{artifacts_latest_dir}}
@@ -132,6 +124,7 @@ deploy-live *args:
         just _deploy-live-generic {{deploy_script_path}} {{args}}
     just _finalize-broadcast-artifacts {{deploy_script_name}} $RPC_URL "" "run-latest.json" {{latest_deploy_config_path}}
 
+# Dry-run deployment to live network (mainnet or hoodi)
 deploy-live-dry *args:
     just _warn "The current `tput bold`chain={{chain}}`tput sgr0` with the following rpc url: $RPC_URL"
     mkdir -p {{artifacts_local_dir}}
@@ -139,7 +132,8 @@ deploy-live-dry *args:
         just _deploy-live-generic-dry {{deploy_script_path}} {{args}}
     just _finalize-broadcast-artifacts {{deploy_script_name}} $RPC_URL "/dry-run" "run-latest.json" {{local_deploy_config_path}}
 
+# Verify deployment on live network (mainnet or hoodi)
 verify-live *args:
-    just _warn "Pass --chain=your_chain manually when running curated deployments"
+    just _warn "Pass --chain=your_chain manually when running deployments"
     just _verify-live-generic {{deploy_script_path}} {{args}}
 

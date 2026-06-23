@@ -18,8 +18,7 @@ ffi = true
 
 fs_permissions = [
     { access = "read-write", path = "./out" },
-    { access = "read-write", path = "./artifacts" },
-    { access = "read", path = "./test/fixtures" },
+    { access = "read-write", path = "./artifacts" }
 ]
 
 ignored_warnings_from = [
@@ -33,7 +32,7 @@ fuzz = { runs = 10_000, max_test_rejects = 2_000_000 }
 
 [profile.coverage]
 # due to coverage running with optimizer disabled, we need to increase the gas limit
-# to fit CSM contract tests in one block
+# to fit contract tests in one block
 block_gas_limit = 60_000_000
 
 [profile.deploy]
@@ -43,16 +42,5 @@ block_gas_limit = 60_000_000
 
 [lint]
 lint_on_build = false
-exclude_lints = [
-    # Temporarily silence all existing lint findings; we will re-enable them one by one.
-    "asm-keccak256",
-    "mixed-case-function",
-    "mixed-case-variable",
-    "named-struct-fields",
-    "pascal-case-struct",
-    "erc20-unchecked-transfer",
-    "incorrect-shift",
-    "unsafe-cheatcode",
-]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config

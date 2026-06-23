@@ -224,6 +224,16 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
         assertEq(isEvenResult, false, "Expected isOdd(4) to return false");
     }
 
+    function test_execute_targetSeeDelegationContractsAsMessageSender() public {
+        bytes memory callData = abi.encodeWithSelector(callableMock.returnsMsgSender.selector);
+
+        vm.prank(delegatee);
+        bytes memory result = delegationContract.execute(address(callableMock), callData);
+
+        address msgSender = abi.decode(result, (address));
+        assertEq(msgSender, address(delegationContract), "Expected msg.sender to be the delegation contract");
+    }
+
     function test_execute_revertWhen_NotDelegatee() public {
         bytes memory callData = abi.encodeWithSelector(callableMock.isOdd.selector, 3);
         address notDelegatee = nextAddress("NOT_DELEGATEE");
