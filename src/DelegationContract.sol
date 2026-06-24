@@ -1,8 +1,10 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+// SPDX-FileCopyrightText: 2026 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
 
-import {IDelegationContract} from "./interfaces/IDelegationContract.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+pragma solidity 0.8.35;
+
+import { IDelegationContract } from "./interfaces/IDelegationContract.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title DelegationContract
 /// @author Lido
@@ -41,7 +43,6 @@ contract DelegationContract is IDelegationContract {
         if (_delegatee == _admin) revert AdminCannotBeDelegatee();
 
         admin = _admin;
-        emit AdminChanged(address(0), _admin);
 
         if (_delegatee != address(0)) {
             delegatee = _delegatee;
@@ -50,13 +51,13 @@ contract DelegationContract is IDelegationContract {
     }
 
     /// @inheritdoc IDelegationContract
-    function assignDelegate(address _delegate) external onlyAdmin {
-        if (_delegate == address(0)) revert ZeroAddress();
-        if (_delegate == delegatee) revert SameDelegatee();
-        if (_delegate == admin) revert AdminCannotBeDelegatee();
+    function assignDelegate(address newDelegate) external onlyAdmin {
+        if (newDelegate == address(0)) revert ZeroAddress();
+        if (newDelegate == delegatee) revert SameDelegatee();
+        if (newDelegate == admin) revert AdminCannotBeDelegatee();
 
-        delegatee = _delegate;
-        emit DelegateAssigned(_delegate);
+        delegatee = newDelegate;
+        emit DelegateAssigned(newDelegate);
     }
 
     /// @inheritdoc IDelegationContract
@@ -69,38 +70,9 @@ contract DelegationContract is IDelegationContract {
     }
 
     /// @inheritdoc IDelegationContract
-    function changeAdmin(address _newAdmin) external onlyAdmin {
-        if (_newAdmin == address(0)) revert ZeroAddress();
-        if (_newAdmin == admin) revert SameAdmin();
-        if (_newAdmin == delegatee) revert AdminCannotBeDelegatee();
-
-        address oldAdmin = admin;
-        admin = _newAdmin;
-        emit AdminChanged(oldAdmin, _newAdmin);
-    }
-
-    /// @inheritdoc IDelegationContract
-    /// @dev Validates that the signature was created by the current delegatee
-    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4 magicValue) {
-        if (delegatee == address(0)) return EIP1271_INVALID;
-
-        address recovered = hash.recover(signature);
-
-        if (recovered == address(0)) return EIP1271_INVALID;
-
-        if (recovered == delegatee) {
-            return EIP1271_MAGIC_VALUE;
-        }
-
-        return EIP1271_INVALID;
-    }
-
-    /// @inheritdoc IDelegationContract
     /// @dev Only the delegatee can execute calls through this contract.
     ///      Uses a regular call so that msg.sender to the target is this contract's address.
-    function execute(bytes calldata data) external onlyDelegatee returns (bytes memory result) {
-        (address target, bytes memory callData) = abi.decode(data, (address, bytes));
-
+    function execute(address target, bytes calldata callData) external onlyDelegatee returns (bytes memory result) {
         if (target == address(0)) revert ZeroAddress();
         if (target == address(this)) revert CannotCallSelf();
         if (target.code.length == 0) revert TargetNotContract();
@@ -111,10 +83,24 @@ contract DelegationContract is IDelegationContract {
 
         if (!success) {
             // solhint-disable-next-line no-inline-assembly
-            assembly {
+            assembly ("memory-safe") {
                 // Bubble up the revert reason from the target contract
                 revert(add(result, 32), mload(result))
             }
         }
+    }
+
+    /// @inheritdoc IDelegationContract
+    /// @dev Validates that the signature was created by the current delegatee
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4 magicValue) {
+        if (delegatee == address(0)) return EIP1271_INVALID;
+
+        address recovered = hash.recover(signature);
+
+        if (recovered == delegatee) {
+            return EIP1271_MAGIC_VALUE;
+        }
+
+        return EIP1271_INVALID;
     }
 }

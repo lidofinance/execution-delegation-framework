@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+// SPDX-FileCopyrightText: 2026 Lido <info@lido.fi>
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.35;
 
 /// @title IDelegationContract
 /// @author Lido
@@ -13,11 +15,6 @@ interface IDelegationContract {
     /// @param delegate The address of the revoked delegate
     event DelegateRevoked(address indexed delegate);
 
-    /// @notice Emitted when the admin is changed
-    /// @param oldAdmin The address of the previous admin
-    /// @param newAdmin The address of the new admin
-    event AdminChanged(address indexed oldAdmin, address indexed newAdmin);
-
     error NotAdmin();
     error NotDelegatee();
     error ZeroAddress();
@@ -29,14 +26,6 @@ interface IDelegationContract {
     error CannotCallSelf();
     error AdminCannotBeDelegatee();
 
-    /// @notice Returns the admin address
-    /// @return The address of the admin (cold wallet or multisig owner)
-    function admin() external view returns (address);
-
-    /// @notice Returns the delegatee address
-    /// @return The address of the delegatee (hot wallet owner)
-    function delegatee() external view returns (address);
-
     /// @notice Assigns a new delegate
     /// @param delegate The address to assign as delegate
     function assignDelegate(address delegate) external;
@@ -44,9 +33,11 @@ interface IDelegationContract {
     /// @notice Revokes the current delegate
     function revokeDelegate() external;
 
-    /// @notice Changes the admin address
-    /// @param newAdmin The address of the new admin
-    function changeAdmin(address newAdmin) external;
+    /// @notice Execute a call to a target contract on behalf of this delegation contract
+    /// @param target The target contract address
+    /// @param callData The calldata to execute on the target contract
+    /// @return result The return data from the call
+    function execute(address target, bytes calldata callData) external returns (bytes memory result);
 
     /// @notice EIP-1271 signature validation
     /// @param hash The hash of the data to be signed
@@ -54,8 +45,11 @@ interface IDelegationContract {
     /// @return magicValue Returns 0x1626ba7e if valid, 0xffffffff otherwise
     function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4 magicValue);
 
-    /// @notice Execute a call to a target contract on behalf of this delegation contract
-    /// @param data ABI-encoded as (address target, bytes calldata) - the target contract and calldata to execute
-    /// @return result The return data from the call
-    function execute(bytes calldata data) external returns (bytes memory result);
+    /// @notice Returns the admin address
+    /// @return The address of the admin (cold wallet or multisig owner)
+    function admin() external view returns (address);
+
+    /// @notice Returns the delegatee address
+    /// @return The address of the delegatee (hot wallet owner)
+    function delegatee() external view returns (address);
 }

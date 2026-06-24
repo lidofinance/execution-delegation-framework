@@ -34,18 +34,18 @@ This model assumes that each permissioned entity (oracle/council operator) is a 
 ## Key Principles
 
 1. **Hot keys no longer hold protocol power directly**
-    - Hot keys only act as *delegatees*
-    - All authority is mediated by the on-chain delegation contract
+   - Hot keys only act as _delegatees_
+   - All authority is mediated by the on-chain delegation contract
 2. **Admin controls delegation**
-    - Each delegation contract has an Admin
-    - Admin is a cold key or multisig
-    - Admin can assign or revoke hot keys instantly
+   - Each delegation contract has an Admin
+   - Admin is a cold key or multisig
+   - Admin can assign or revoke hot keys instantly
 3. **Protocol trusts Delegation contracts**
-    - Delegation contracts can have only one admin and one delegatee
-    - Core contracts can validate signed messages in the delegation contracts
+   - Delegation contracts can have only one admin and one delegatee
+   - Core contracts can validate signed messages in the delegation contracts
 4. **Factory-based deployment**
-    - A factory contract deploys a standardized delegation contract
-    - Delegation Layer should be used for any permissioned bot
+   - A factory contract deploys a standardized delegation contract
+   - Delegation Layer should be used for any permissioned bot
 
 ## Architecture
 
@@ -115,24 +115,17 @@ Copy `.env.example` to `.env` and fill in the values:
 cp .env.example .env
 ```
 
-| Variable | Description |
-|----------|-------------|
-| `DEPLOYER_PRIVATE_KEY` | Private key for deploying contracts |
-| `MAINNET_RPC_URI` | Ethereum mainnet RPC endpoint |
-| `HOODI_RPC_URI` | Hoodi testnet RPC endpoint |
-| `ETHERSCAN_API_KEY` | Etherscan API key for contract verification |
+Create account for deploy
+
+```bash
+cast wallet import --interactive Deployer
+```
 
 ### 2. Deploy DelegationFactory
 
 ```bash
-# Testnet (Hoodi)
-make deploy-testnet
-
-# Mainnet
-make deploy-mainnet
+just deploy-live --account Deployer
 ```
-
-The `--publish` flag is included inside Makefile by default to verify contracts on Etherscan.
 
 ### 3. Deploy DelegationContract
 
@@ -150,12 +143,11 @@ Once the factory is deployed, anyone can deploy their own DelegationContract:
 
 On Etherscan, go to your DelegationContract → **Write Contract**:
 
-| Function | Description | Who can call |
-|----------|-------------|--------------|
-| `assignDelegate(address)` | Set or rotate the hot key | Admin only |
-| `revokeDelegate()` | Remove delegatee access | Admin only |
-| `changeAdmin(address)` | Transfer admin role | Admin only |
-| `execute(bytes)` | Execute call through contract | Delegatee only |
+| Function                  | Description                   | Who can call   |
+| ------------------------- | ----------------------------- | -------------- |
+| `assignDelegate(address)` | Set or rotate the hot key     | Admin only     |
+| `revokeDelegate()`        | Remove delegatee access       | Admin only     |
+| `execute(address,bytes)`  | Execute call through contract | Delegatee only |
 
 ### 5. Request Protocol Permissions
 
@@ -166,33 +158,23 @@ After deploying your DelegationContract:
 
 ## Development
 
-All commands run inside Docker container. Start the dev environment first:
+### Setup
 
 ```bash
-make up          # Start dev container
-make sh          # Shell access to container
+just deps        # Install dependencies
+just deps-dev    # Install development dependencies
 ```
 
 ### Build & Test
 
 ```bash
-make compile     # Compile Solidity contracts
-make test        # Run tests
+just build        # Compile Solidity contracts
+just test-unit    # Run tests
 ```
 
 ### Linting & Formatting
 
 ```bash
-make lint-solidity   # Lint Solidity with solhint
-make lint-python     # Lint Python with ruff
-make format-python   # Format Python with ruff
-make typecheck       # Type check Python with pyright
+just lint        # Run linter
+just lint-fix    # Run linter and fix formatting issues
 ```
-
-### Console
-
-```bash
-make console         # Ape console
-make console-fork    # Ape console with mainnet fork
-```
-
