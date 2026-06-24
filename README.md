@@ -147,7 +147,6 @@ On Etherscan, go to your DelegationContract → **Write Contract**:
 | ------------------------- | ----------------------------- | -------------- |
 | `assignDelegate(address)` | Set or rotate the hot key     | Admin only     |
 | `revokeDelegate()`        | Remove delegatee access       | Admin only     |
-| `changeAdmin(address)`    | Transfer admin role           | Admin only     |
 | `execute(bytes)`          | Execute call through contract | Delegatee only |
 
 ### 5. Request Protocol Permissions

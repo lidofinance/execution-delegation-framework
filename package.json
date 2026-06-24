@@ -8,8 +8,8 @@
   "private": true,
   "scripts": {
     "lint:solhint": "solhint './src/**/*.sol'",
-    "lint:check": "prettier --check **.sol && yarn lint:solhint",
-    "lint:fix": "prettier --write **.sol"
+    "lint:check": "prettier --check '**/*.sol' && yarn lint:solhint",
+    "lint:fix": "prettier --write '**/*.sol'"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.4.0",

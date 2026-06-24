@@ -14,7 +14,6 @@ cache_path = "cache"
 
 block_gas_limit = 30_000_000
 fuzz = { runs = 256, max_test_rejects = 100_000 }
-ffi = true
 
 fs_permissions = [
     { access = "read-write", path = "./out" },
@@ -29,7 +28,6 @@ ignored_warnings_from = [
 verbosity = 3
 eth_rpc_timeout = 120
 fuzz = { runs = 10_000, max_test_rejects = 2_000_000 }
-ffi = false
 
 [profile.coverage]
 # due to coverage running with optimizer disabled, we need to increase the gas limit
