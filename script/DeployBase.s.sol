@@ -34,7 +34,7 @@ abstract contract DeployBase is Script {
 
         (, deployer, ) = vm.readCallers();
         vm.label(deployer, "DEPLOYER");
-
+        // {salt: bytes32(0)}
         delegationFactory = new DelegationFactory();
 
         JsonObj memory deployJson = Json.newObj("artifact");
