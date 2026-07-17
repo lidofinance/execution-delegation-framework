@@ -18,7 +18,7 @@ cp .env.example .env
 Create an account for deployment:
 
 ```bash
-cast wallet import --interactive Deployer
+cast wallet import --interactive Owner
 ```
 
 ## 2. Deploy DelegationContract
@@ -47,10 +47,3 @@ Via `just` (owner-only commands need `--account Owner`; view commands need no si
 | `just is-terminated <contract> --rpc-url $RPC_URL`        | View whether the contract has been terminated         | Anyone       |
 
 Local `anvil` testing uses the same commands without the `-live` suffix (`assign-delegate`, `revoke-delegate`, `terminate`, `deploy-delegate`), defaulting to the local anvil RPC URL instead of `$RPC_URL`.
-
-## 4. Request Protocol Permissions
-
-After deploying your DelegationContract:
-
-1. Submit a request through the protocol's permission-granting process (e.g. a governance vote) to grant permissions to your DelegationContract address
-2. Once approved, your delegate can execute permitted operations through the contract, or sign messages that integrators verify via `isValidSignature` (ERC-1271)
