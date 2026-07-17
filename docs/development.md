@@ -96,6 +96,13 @@ git commit -m "chore: add hoodi deployment artifacts"
 | `just lint-fix`      | Auto-fix lint/formatting issues              |
 | `just clean`         | Remove build/cache/deploy artifacts          |
 
+### Static analysis (Slither)
+
+```bash
+pipx install slither-analyzer   # one-time install; or: pip3 install --user slither-analyzer
+slither . --config-file slither.config.json
+```
+
 ### Factory deployment
 
 | Command                                   | Description                                                                                |

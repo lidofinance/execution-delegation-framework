@@ -160,54 +160,12 @@ jobs:
       - name: Install dependencies
         run: just deps
 
-      - name: Run coverage
-        run: just coverage-lcov
+      - name: Run coverage and enforce 100% threshold
+        run: just coverage-check
 
       - name: Upload coverage report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
           path: lcov.info
-
-  slither:
-    name: Slither
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Set FOUNDRY_VERSION
-        run: echo "FOUNDRY_VERSION=$(head .foundryref)" >> "$GITHUB_ENV"
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: ${{ env.FOUNDRY_VERSION }}
-
-      - name: Install node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: yarn
-          cache-dependency-path: "**/yarn.lock"
-
-      - name: Install dependencies
-        run: yarn workspaces focus --all --production
-
-      - name: Run Slither
-        id: slither
-        uses: crytic/slither-action@v0.4.1
-        with:
-          fail-on: medium
-          sarif: results.sarif
-
-      - name: Upload SARIF
-        if: always() && steps.slither.outputs.sarif != ''
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}

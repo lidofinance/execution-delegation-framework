@@ -112,9 +112,23 @@ test-unit *args:
 coverage *args:
     FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' {{args}}
 
-# Run coverage and save the report in LCOV file.
+# Run coverage, print the summary table, and save the report in LCOV file.
 coverage-lcov *args:
-    FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' --report lcov {{args}}
+    FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' --report summary --report lcov {{args}}
+
+# Run coverage and fail if line/statement/branch/function coverage is below 100%.
+coverage-check *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    output=$(just coverage-lcov {{args}})
+    echo "$output"
+    total_line=$(echo "$output" | grep '| Total')
+    below_100=$(echo "$total_line" | grep -oE '[0-9]+\.[0-9]+' | awk '$1 + 0 < 100 { found=1 } END { print found + 0 }')
+    if [ "$below_100" = "1" ]; then
+        just _warn "Coverage is below 100%"
+        exit 1
+    fi
+    just _info "Coverage is 100%"
 
 # Deployment
 
