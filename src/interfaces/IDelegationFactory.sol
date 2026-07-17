@@ -4,7 +4,6 @@
 pragma solidity 0.8.35;
 
 /// @title IDelegationFactory
-/// @author Lido
 /// @notice Interface for the factory that deploys DelegationContract instances
 interface IDelegationFactory {
     /// @notice Emitted for each DelegationContract deployed by the factory.

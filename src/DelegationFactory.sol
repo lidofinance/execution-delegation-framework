@@ -7,7 +7,6 @@ import { IDelegationFactory } from "./interfaces/IDelegationFactory.sol";
 import { DelegationContract } from "./DelegationContract.sol";
 
 /// @title DelegationFactory
-/// @author Lido
 /// @notice Factory for deploying DelegationContract instances
 /// @dev Deploys standardized delegation contracts for permissioned entities
 contract DelegationFactory is IDelegationFactory {

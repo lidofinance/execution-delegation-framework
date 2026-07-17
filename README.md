@@ -1,4 +1,4 @@
-# <img src="docs/logo.svg" height="70px" align="center" alt="Lido Logo"/> Execution Delegation Framework
+# <img src="docs/_logo.svg" height="70px" align="center" alt="Lido Logo"/> Execution Delegation Framework
 
 Fast and safe execution delegation framework for permissioned entities.
 

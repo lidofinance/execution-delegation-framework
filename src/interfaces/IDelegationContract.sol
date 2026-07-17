@@ -4,7 +4,6 @@
 pragma solidity 0.8.35;
 
 /// @title IDelegationContract
-/// @author Lido
 /// @notice Interface for the minimal Execution Delegation Framework (EDF) delegation contract:
 ///         one owner, one active delegate, cooldown-gated reassignment, irreversible termination.
 interface IDelegationContract {
@@ -37,6 +36,8 @@ interface IDelegationContract {
     ///         delegate and restarts the cooldown; the current one stays
     ///         effective throughout. To drop a (e.g. compromised) delegate
     ///         immediately, use revokeDelegate().
+    ///         Reverts if delegate == address(0); removing a delegate is only
+    ///         possible via revokeDelegate().
     ///         Reverts if delegate == owner.
     ///         Reverts if the contract is terminated.
     /// @param delegate Address of the incoming delegate.

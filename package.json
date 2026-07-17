@@ -1,9 +1,13 @@
 {
-  "name": "delegation-execution-authority",
-  "version": "0.0.1",
-  "description": "Delegation Execution Authority for Lido protocol",
-  "repository": "https://github.com/lidofinance/delegation-execution-authority.git",
-  "author": "Oracles Team <valset-oracles@lido.fi>",
+  "name": "execution-delegation-framework",
+  "version": "1.0.0",
+  "description": "Execution Delegation Framework",
+  "repository": "https://github.com/lidofinance/execution-delegation-framework.git",
+  "author": "Oracles Team",
+  "contributors": [
+    "Matsvei Talstalutski",
+    "Raman Siamionau"
+  ],
   "license": "GPL-3.0",
   "private": true,
   "scripts": {
