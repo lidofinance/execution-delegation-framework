@@ -13,6 +13,8 @@ import { DelegationContract } from "../../src/DelegationContract.sol";
 import { IDelegationContract } from "../../src/interfaces/IDelegationContract.sol";
 import { Utilities } from "../helpers/Utilities.sol";
 import { CallableMock } from "../helpers/mocks/CallableMock.sol";
+import { ERC1271WalletMock, ERC1271RevertingWalletMock } from "../helpers/mocks/ERC1271WalletMock.sol";
+import { ReentrantMock } from "../helpers/mocks/ReentrantMock.sol";
 
 contract DelegationContractBaseTest is Test, Utilities {
     /// @notice EIP-1271 magic value returned on valid signature
@@ -189,6 +191,12 @@ contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithD
 
         vm.warp(activeFrom);
         assertEq(delegationContract.getDelegate(), secondNewDelegate);
+    }
+
+    function test_assignDelegate_revertWhen_ZeroDelegate() public {
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ZeroAddress.selector));
+        vm.prank(owner);
+        delegationContract.assignDelegate(address(0));
     }
 
     function test_assignDelegate_revertWhen_OwnerIsDelegate() public {
@@ -426,6 +434,49 @@ contract DelegationContractIsValidSignatureTest is DelegationContractBaseTest {
         assertEq(magicValue, EIP1271_INVALID, "Expected invalid signature to return correct magic value");
     }
 
+    function test_isValidSignature_contractDelegate_valid() public {
+        uint256 walletSignerKey = 0xdeadbeef156;
+        ERC1271WalletMock wallet = new ERC1271WalletMock(vm.addr(walletSignerKey));
+        DelegationContract dc = new DelegationContract(owner, address(wallet), cooldown);
+
+        bytes32 hash = keccak256("TEST_HASH");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(walletSignerKey, hash);
+
+        assertEq(
+            dc.isValidSignature(hash, abi.encodePacked(r, s, v)),
+            EIP1271_MAGIC_VALUE,
+            "Contract delegate must be validated via its own ERC-1271 check"
+        );
+    }
+
+    function test_isValidSignature_contractDelegate_invalidSigner() public {
+        uint256 walletSignerKey = 0xdeadbeef156;
+        ERC1271WalletMock wallet = new ERC1271WalletMock(vm.addr(walletSignerKey));
+        DelegationContract dc = new DelegationContract(owner, address(wallet), cooldown);
+
+        bytes32 hash = keccak256("TEST_HASH");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(walletSignerKey + 1, hash);
+
+        assertEq(
+            dc.isValidSignature(hash, abi.encodePacked(r, s, v)),
+            EIP1271_INVALID,
+            "Signature rejected by the delegate wallet must be rejected here too"
+        );
+    }
+
+    function test_isValidSignature_contractDelegate_revertingWalletFailsClosed() public {
+        ERC1271RevertingWalletMock wallet = new ERC1271RevertingWalletMock();
+        DelegationContract dc = new DelegationContract(owner, address(wallet), cooldown);
+
+        bytes32 hash = keccak256("TEST_HASH");
+
+        assertEq(
+            dc.isValidSignature(hash, hex"1234"),
+            EIP1271_INVALID,
+            "A reverting delegate wallet must fail closed, not revert"
+        );
+    }
+
     function test_isValidSignature_oldDelegateStillValidDuringCooldown() public {
         address newDelegate = vm.addr(privateKeyForNewDelegate);
 
@@ -595,6 +646,44 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
         delegationContract.execute{ value: value }(address(callableMock), callData);
     }
 
+    function test_execute_reentrantExecute_revertsWithNotDelegate() public {
+        ReentrantMock reentrant = new ReentrantMock(delegationContract);
+
+        vm.prank(delegate);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotDelegate.selector));
+        delegationContract.execute(address(reentrant), abi.encodeWithSelector(ReentrantMock.reenterExecute.selector));
+    }
+
+    function test_execute_reentrantAssignDelegate_revertsWithNotOwner() public {
+        ReentrantMock reentrant = new ReentrantMock(delegationContract);
+
+        vm.prank(delegate);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
+        delegationContract.execute(
+            address(reentrant),
+            abi.encodeWithSelector(ReentrantMock.reenterAssignDelegate.selector)
+        );
+    }
+
+    function test_execute_reentrantRevokeDelegate_revertsWithNotOwner() public {
+        ReentrantMock reentrant = new ReentrantMock(delegationContract);
+
+        vm.prank(delegate);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
+        delegationContract.execute(
+            address(reentrant),
+            abi.encodeWithSelector(ReentrantMock.reenterRevokeDelegate.selector)
+        );
+    }
+
+    function test_execute_reentrantTerminate_revertsWithNotOwner() public {
+        ReentrantMock reentrant = new ReentrantMock(delegationContract);
+
+        vm.prank(delegate);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
+        delegationContract.execute(address(reentrant), abi.encodeWithSelector(ReentrantMock.reenterTerminate.selector));
+    }
+
     function test_execute_doesNotTouchPreExistingBalance() public {
         uint256 preExisting = 2 ether;
         vm.deal(address(delegationContract), preExisting);
@@ -635,5 +724,68 @@ contract DelegationContractIntrospectionTest is DelegationContractBaseTestWithDe
 
     function test_owner_returnsOwner() public view {
         assertEq(delegationContract.owner(), owner);
+    }
+}
+
+contract DelegationContractFuzzTest is DelegationContractBaseTestWithDeployment {
+    function testFuzz_getDelegate_pendingActivatesExactlyAtActiveFrom(uint256 cooldown_, uint256 warpBy) public {
+        cooldown_ = bound(cooldown_, 1, 365 days);
+        warpBy = bound(warpBy, 0, 2 * 365 days);
+
+        DelegationContract dc = new DelegationContract(owner, delegate, cooldown_);
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        dc.assignDelegate(newDelegate);
+        uint256 activeFrom = block.timestamp + cooldown_;
+
+        vm.warp(block.timestamp + warpBy);
+
+        if (block.timestamp >= activeFrom) {
+            assertEq(dc.getDelegate(), newDelegate, "Nominee must be effective once activeFrom is reached");
+        } else {
+            assertEq(dc.getDelegate(), delegate, "Old delegate must stay effective before activeFrom");
+        }
+    }
+
+    function testFuzz_replacedPendingDelegateNeverActivates(uint256 replaceAfter, uint256 warpBy) public {
+        // Replace the first nominee strictly before it matures, then check it never activates.
+        replaceAfter = bound(replaceAfter, 0, cooldown - 1);
+        warpBy = bound(warpBy, 0, 4 * 365 days);
+
+        address firstNominee = nextAddress("FIRST_NOMINEE");
+        address secondNominee = nextAddress("SECOND_NOMINEE");
+
+        vm.prank(owner);
+        delegationContract.assignDelegate(firstNominee);
+
+        vm.warp(block.timestamp + replaceAfter);
+        vm.prank(owner);
+        delegationContract.assignDelegate(secondNominee);
+        uint256 secondActiveFrom = block.timestamp + cooldown;
+
+        vm.warp(block.timestamp + warpBy);
+
+        address effective = delegationContract.getDelegate();
+        assertTrue(effective != firstNominee, "Replaced pending delegate must never become effective");
+        assertEq(effective, block.timestamp >= secondActiveFrom ? secondNominee : delegate);
+    }
+
+    function testFuzz_terminated_noDelegateForever(uint256 warpBy) public {
+        warpBy = bound(warpBy, 0, 10 * 365 days);
+
+        vm.prank(owner);
+        delegationContract.assignDelegate(nextAddress("NEW_DELEGATE"));
+
+        vm.prank(owner);
+        delegationContract.terminate();
+
+        vm.warp(block.timestamp + warpBy);
+
+        assertEq(delegationContract.getDelegate(), address(0), "Terminated contract must never have a delegate");
+
+        (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
+        assertEq(pending, address(0), "Terminated contract must never report a pending delegate");
+        assertEq(activeFrom, 0);
     }
 }

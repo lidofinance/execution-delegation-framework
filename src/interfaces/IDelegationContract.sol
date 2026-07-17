@@ -30,8 +30,7 @@ interface IDelegationContract {
     ///         after the contract's cooldown (`getCooldown()` seconds, or
     ///         immediately if cooldown is 0). The currently effective delegate
     ///         (if any) stays effective throughout the cooldown and is dropped
-    ///         only when the new one activates — so a planned rotation is
-    ///         seamless, with no interval lacking an active delegate.
+    ///         only when the new one activates.
     ///         Reassigning before the cooldown elapses replaces the pending
     ///         delegate and restarts the cooldown; the current one stays
     ///         effective throughout. To drop a (e.g. compromised) delegate
@@ -65,7 +64,7 @@ interface IDelegationContract {
     ///         Only callable by the current delegate.
     ///         Reverts if the contract is terminated.
     ///         Reverts if the target call reverts.
-    ///         Forwards msg.value to the target to support payable targets.
+    ///         Forwards msg.value to the target.
     /// @param target Address to call.
     /// @param data   Call data.
     /// @return result Return data from the call.
@@ -113,11 +112,12 @@ interface IDelegationContract {
 
     /// @notice Returns the pending (not-yet-effective) delegate and the
     ///         timestamp at which it becomes effective, or (address(0), 0) when
-    ///         there is no such pending assignment. Derived from the current
-    ///         time: once the cooldown has elapsed (block.timestamp >=
-    ///         activeFrom) the scheduled delegate is already effective, so it is
-    ///         no longer reported here — this returns (address(0), 0) and
-    ///         getDelegate() returns that delegate instead.
+    ///         there is no such pending assignment. The result is
+    ///         time-dependent: a scheduled delegate is returned here only while
+    ///         block.timestamp < activeFrom. From that moment on it is the
+    ///         effective delegate — getDelegate() starts returning it and this
+    ///         function returns (address(0), 0), with no transaction needed for
+    ///         the transition.
     function getPendingDelegate() external view returns (address delegate, uint256 activeFrom);
 
     /// @notice Cooldown in seconds between assigning a delegate and it
