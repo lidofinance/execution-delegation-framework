@@ -26,8 +26,12 @@ abstract contract DeployBase is Script {
     }
 
     function run(string memory _gitRef) external virtual {
+        _run(_gitRef, chainId);
+    }
+
+    function _run(string memory _gitRef, uint256 _chainId) internal {
         gitRef = _gitRef;
-        if (chainId != block.chainid) revert ChainIdMismatch({ actual: block.chainid, expected: chainId });
+        if (_chainId != block.chainid) revert ChainIdMismatch({ actual: block.chainid, expected: _chainId });
         artifactDir = vm.envOr("ARTIFACTS_DIR", string("./artifacts/local/"));
 
         vm.startBroadcast();
@@ -38,7 +42,7 @@ abstract contract DeployBase is Script {
         delegationFactory = new DelegationFactory();
 
         JsonObj memory deployJson = Json.newObj("artifact");
-        deployJson.set("ChainId", chainId);
+        deployJson.set("ChainId", _chainId);
         deployJson.set("DelegationFactory", address(delegationFactory));
         deployJson.set("git-ref", gitRef);
         if (!vm.exists(artifactDir)) {
