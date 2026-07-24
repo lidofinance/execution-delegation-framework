@@ -8,8 +8,10 @@ chain_script_suffix := if chain == "mainnet" {
     "Mainnet"
 } else if chain == "hoodi" {
     "Hoodi"
+} else if chain == "local-devnet" {
+    "LocalDevnet"
 } else {
-    error("Unsupported chain " + chain + ". Supported: mainnet, hoodi")
+    error("Unsupported chain " + chain + ". Supported: mainnet, hoodi, local-devnet")
 }
 anvil_host := env_var_or_default("ANVIL_IP_ADDR", "127.0.0.1")
 anvil_port := env_var_or_default("ANVIL_PORT", "8545")
@@ -26,11 +28,18 @@ latest_transactions_path := artifacts_latest_dir + "transactions.json"
 local_transactions_path := artifacts_local_dir + "transactions.json"
 latest_deploy_config_path := artifacts_latest_dir + "deploy-" + chain + ".json"
 local_deploy_config_path := artifacts_local_dir + "deploy-" + chain + ".json"
+local_devnet_deploy_script_name := "DeployLocalDevnet"
+local_devnet_deploy_script_path := "script/DeployLocalDevnet.s.sol:DeployLocalDevnet"
+local_devnet_deploy_config_path := artifacts_local_dir + "deploy-local-devnet.json"
 
 # Shared deployment helpers
 _deploy-generic deploy_script_path rpc_url *args:
     FOUNDRY_PROFILE=deploy \
         forge script {{deploy_script_path}} --sig="run(string)" --rpc-url {{rpc_url}} --broadcast --slow {{args}} -- `git rev-parse HEAD`
+
+_deploy-local-devnet-generic deploy_script_path rpc_url chain_id *args:
+    FOUNDRY_PROFILE=deploy \
+        forge script {{deploy_script_path}} --sig="run(string,uint256)" --rpc-url {{rpc_url}} --broadcast --slow {{args}} -- `git rev-parse HEAD` {{chain_id}}
 
 [confirm("You are about to broadcast deployment transactions to the network. Are you sure?")]
 _deploy-live-generic deploy_script_path *args:
@@ -103,9 +112,23 @@ test-unit *args:
 coverage *args:
     FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' {{args}}
 
-# Run coverage and save the report in LCOV file.
+# Run coverage, print the summary table, and save the report in LCOV file.
 coverage-lcov *args:
-    FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' --report lcov {{args}}
+    FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' --report summary --report lcov {{args}}
+
+# Run coverage and fail if line/statement/branch/function coverage is below 100%.
+coverage-check *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    output=$(just coverage-lcov {{args}})
+    echo "$output"
+    total_line=$(echo "$output" | grep '| Total')
+    below_100=$(echo "$total_line" | grep -oE '[0-9]+\.[0-9]+' | awk '$1 + 0 < 100 { found=1 } END { print found + 0 }')
+    if [ "$below_100" = "1" ]; then
+        just _warn "Coverage is below 100%"
+        exit 1
+    fi
+    just _info "Coverage is 100%"
 
 # Deployment
 
@@ -115,6 +138,13 @@ deploy *args:
     ARTIFACTS_DIR={{artifacts_local_dir}} \
         just _deploy-generic {{deploy_script_path}} {{anvil_rpc_url}} {{args}}
     just _finalize-broadcast-artifacts {{deploy_script_name}} {{anvil_rpc_url}} "" "run-latest.json" {{local_deploy_config_path}}
+
+# Deploy to a local devnet with an explicitly provided chain id
+deploy-local-devnet chain_id *args:
+    mkdir -p {{artifacts_local_dir}}
+    ARTIFACTS_DIR={{artifacts_local_dir}} \
+        just _deploy-local-devnet-generic {{local_devnet_deploy_script_path}} {{anvil_rpc_url}} {{chain_id}} {{args}}
+    just _finalize-broadcast-artifacts {{local_devnet_deploy_script_name}} {{anvil_rpc_url}} "" "run-latest.json" {{local_devnet_deploy_config_path}}
 
 # Deploy to live network (mainnet or hoodi)
 deploy-live *args:
@@ -211,4 +241,3 @@ get-cooldown contract *args:
 
 is-terminated contract *args:
     cast call {{contract}} "isTerminated()(bool)" {{args}}
-

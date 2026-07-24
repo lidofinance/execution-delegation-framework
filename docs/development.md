@@ -27,7 +27,7 @@ cp .env.example .env
 |---------------------|---------------------------------------------------------------------------|
 | `RPC_URL`           | RPC endpoint used by all `-live` commands                                 |
 | `ETHERSCAN_API_KEY` | Used by `deploy-live`/`verify-live` to verify the deployed source         |
-| `CHAIN`             | `mainnet` or `hoodi` — selects the deploy script and artifact paths       |
+| `CHAIN`             | `mainnet`, `hoodi`, or `local-devnet` — selects deploy artifact paths     |
 | `ARTIFACTS_DIR`     | Where deployment artifacts are written (defaults to `./artifacts/local/`) |
 
 Create a signing account for deployment:
@@ -45,6 +45,10 @@ The factory is a singleton with no constructor arguments, so it only needs to be
 # `anvil --chain-id 560048` in a separate terminal
 just deploy --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --unlocked
 
+# Deploy to a local devnet with an explicit expected chain id
+# `anvil --chain-id 31337` in a separate terminal
+just deploy-local-devnet 31337 --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --unlocked
+
 # Dry-run against a live network (mainnet or hoodi) without broadcasting
 CHAIN=hoodi just deploy-live-dry --account Deployer
 
@@ -58,9 +62,13 @@ CHAIN=hoodi just verify-live --account Deployer
 Each deploy writes the factory address to a JSON artifact:
 
 - `deploy` (anvil) → `artifacts/local/deploy-<chain>.json`
+- `deploy-local-devnet <chain-id>` → `artifacts/local/deploy-local-devnet.json`
 - `deploy-live`/`deploy-live-dry` → `artifacts/latest/deploy-<chain>.json` (or `artifacts/local/...` for the dry run)
 
+`deploy-local-devnet` passes `<chain-id>` to the Solidity deploy script and reverts before broadcasting when it does not match the RPC network's `block.chainid`.
+
 The `deploy-delegate`/`deploy-delegate-live` commands (see below) read the factory address straight out of these artifacts, so no manual address copying is needed once the factory is deployed.
+Use `CHAIN=local-devnet just deploy-delegate ...` to select the local-devnet factory artifact.
 
 To commit a live deployment permanently, copy the artifacts from `artifacts/latest/` to the chain-specific directory and commit them:
 
@@ -88,14 +96,22 @@ git commit -m "chore: add hoodi deployment artifacts"
 | `just lint-fix`      | Auto-fix lint/formatting issues              |
 | `just clean`         | Remove build/cache/deploy artifacts          |
 
+### Static analysis (Slither)
+
+```bash
+pipx install slither-analyzer   # one-time install; or: pip3 install --user slither-analyzer
+slither . --config-file slither.config.json
+```
+
 ### Factory deployment
 
-| Command                | Description                                                                                |
-|------------------------|--------------------------------------------------------------------------------------------|
-| `just deploy`          | Deploy `DelegationFactory` to a local anvil instance                                       |
-| `just deploy-live`     | Deploy `DelegationFactory` to a live network, with confirmation and Etherscan verification |
-| `just deploy-live-dry` | Simulate a live deployment without broadcasting                                            |
-| `just verify-live`     | Verify an already-deployed factory on Etherscan                                            |
+| Command                                   | Description                                                                                |
+|-------------------------------------------|--------------------------------------------------------------------------------------------|
+| `just deploy`                             | Deploy `DelegationFactory` to a local anvil instance                                       |
+| `just deploy-local-devnet <chain-id>`     | Deploy to a local devnet and validate its chain ID against the explicit parameter          |
+| `just deploy-live`                        | Deploy `DelegationFactory` to a live network, with confirmation and Etherscan verification |
+| `just deploy-live-dry`                    | Simulate a live deployment without broadcasting                                            |
+| `just verify-live`                        | Verify an already-deployed factory on Etherscan                                            |
 
 ### DelegationContract deployment and management (via `cast`)
 

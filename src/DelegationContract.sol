@@ -10,7 +10,6 @@ import { IERC5313 } from "@openzeppelin/contracts/interfaces/IERC5313.sol";
 import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 /// @title DelegationContract
-/// @author Lido
 /// @notice Minimal, non-upgradeable delegation contract implementing the Execution Delegation
 ///         Framework (EDF): one owner, one active delegate. The owner assigns and revokes
 ///         the delegate; the delegate dispatches calls via execute() (push) or
@@ -18,7 +17,7 @@ import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/Sig
 /// @dev The owner can never execute() or sign on the contract's behalf. Delegate assignment
 ///      is cooldown-gated so a compromised-owner reassignment is visible before it takes
 ///      effect; revocation and termination are immediate.
-contract DelegationContract is IDelegationContract {
+contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 {
     /// @notice EIP-1271 magic value returned on valid signature
     bytes4 internal constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
     /// @notice Value returned on invalid signature
@@ -67,6 +66,7 @@ contract DelegationContract is IDelegationContract {
 
     /// @inheritdoc IDelegationContract
     function assignDelegate(address delegate) external onlyOwner notTerminated {
+        if (delegate == address(0)) revert ZeroAddress();
         if (delegate == OWNER) revert OwnerCannotBeDelegate();
 
         _settle();
@@ -128,7 +128,11 @@ contract DelegationContract is IDelegationContract {
 
     /// @inheritdoc IDelegationContract
     /// @dev Validates that the signature was created by the currently effective delegate.
-    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4 magicValue) {
+    // solhint-disable-next-line gas-calldata-parameters
+    function isValidSignature(
+        bytes32 hash,
+        bytes memory signature
+    ) external view override(IDelegationContract, IERC1271) returns (bytes4 magicValue) {
         address delegate = getDelegate();
         if (delegate != address(0) && SignatureChecker.isValidSignatureNow(delegate, hash, signature)) {
             return EIP1271_MAGIC_VALUE;
@@ -137,7 +141,7 @@ contract DelegationContract is IDelegationContract {
     }
 
     /// @inheritdoc IDelegationContract
-    function owner() external view returns (address) {
+    function owner() external view override(IDelegationContract, IERC5313) returns (address) {
         return OWNER;
     }
 
@@ -160,7 +164,7 @@ contract DelegationContract is IDelegationContract {
     }
 
     /// @inheritdoc IDelegationContract
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure override(IDelegationContract, IERC165) returns (bool) {
         return
             interfaceId == type(IERC165).interfaceId ||
             interfaceId == type(IERC1271).interfaceId ||
