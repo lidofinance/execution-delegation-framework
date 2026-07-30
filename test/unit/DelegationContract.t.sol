@@ -96,7 +96,7 @@ contract DelegationContractConstructorTest is DelegationContractBaseTest {
     }
 }
 
-contract DelegationContractnominateDelegateTest is DelegationContractBaseTestWithDeployment {
+contract DelegationContractNominateDelegateTest is DelegationContractBaseTestWithDeployment {
     function test_nominateDelegate_schedulesPending() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
         uint256 expectedActiveFrom = block.timestamp + cooldown;
@@ -193,6 +193,32 @@ contract DelegationContractnominateDelegateTest is DelegationContractBaseTestWit
         assertEq(delegationContract.getDelegate(), secondNewDelegate);
     }
 
+    function test_nominateDelegate_nominateOldAfterMaturity() public {
+        address newDelegate = nextAddress("FIRST_NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.warp(block.timestamp + cooldown);
+        assertEq(delegationContract.getDelegate(), newDelegate);
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(delegate);
+
+        assertEq(
+            delegationContract.getDelegate(),
+            newDelegate,
+            "Matured delegate must settle as current, never reverting to the original delegate"
+        );
+
+        (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
+        assertEq(pending, delegate);
+        assertEq(activeFrom, block.timestamp + cooldown);
+
+        vm.warp(activeFrom);
+        assertEq(delegationContract.getDelegate(), delegate);
+    }
+
     function test_nominateDelegate_revertWhen_ZeroDelegate() public {
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ZeroAddress.selector));
         vm.prank(owner);
@@ -209,6 +235,19 @@ contract DelegationContractnominateDelegateTest is DelegationContractBaseTestWit
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.AlreadyDelegate.selector));
         vm.prank(owner);
         delegationContract.nominateDelegate(delegate);
+    }
+
+    function test_nominateDelegate_revertWhen_AlreadyDelegateAfterMaturity() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.warp(block.timestamp + cooldown);
+
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.AlreadyDelegate.selector));
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
     }
 
     function test_nominateDelegate_revertWhen_AlreadyPendingDelegate() public {
@@ -344,7 +383,7 @@ contract DelegationContractTerminateTest is DelegationContractBaseTestWithDeploy
         delegationContract.terminate();
     }
 
-    function test_terminate_thennominateDelegate_reverts() public {
+    function test_terminate_thenNominateDelegate_reverts() public {
         vm.prank(owner);
         delegationContract.terminate();
 
@@ -609,14 +648,6 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
         delegationContract.execute(address(delegationContract), callData);
     }
 
-    function test_execute_revertWhen_TargetNotContract() public {
-        bytes memory callData = abi.encodeWithSelector(callableMock.isOdd.selector, 3);
-
-        vm.prank(delegate);
-        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.TargetNotContract.selector));
-        delegationContract.execute(address(0x123), callData);
-    }
-
     function test_execute_revertWhen_Terminated() public {
         vm.prank(owner);
         delegationContract.terminate();
@@ -639,6 +670,21 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
 
         assertEq(delegate.balance, 0, "execute() never refunds any value back to the delegate");
         assertEq(address(callableMock).balance, value, "Target should have received the full value");
+        assertEq(address(delegationContract).balance, 0);
+    }
+
+    function test_execute_forwardsValueToEoa() public {
+        address randomEoa = nextAddress("RANDOM_EOA");
+        uint256 value = 1 ether;
+        vm.deal(delegate, value);
+
+        bytes memory emptyCallData;
+
+        vm.prank(delegate);
+        delegationContract.execute{ value: value }(randomEoa, emptyCallData);
+
+        assertEq(delegate.balance, 0, "execute() never refunds any value back to the delegate");
+        assertEq(randomEoa.balance, value, "Target should have received the full value");
         assertEq(address(delegationContract).balance, 0);
     }
 
@@ -667,14 +713,14 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
         delegationContract.execute(address(reentrant), abi.encodeWithSelector(ReentrantMock.reenterExecute.selector));
     }
 
-    function test_execute_reentrantnominateDelegate_revertsWithNotOwner() public {
+    function test_execute_reentrantNominateDelegate_revertsWithNotOwner() public {
         ReentrantMock reentrant = new ReentrantMock(delegationContract);
 
         vm.prank(delegate);
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
         delegationContract.execute(
             address(reentrant),
-            abi.encodeWithSelector(ReentrantMock.reenternominateDelegate.selector)
+            abi.encodeWithSelector(ReentrantMock.reenterNominateDelegate.selector)
         );
     }
 

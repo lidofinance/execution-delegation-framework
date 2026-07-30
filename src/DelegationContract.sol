@@ -69,12 +69,12 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
 
     /// @inheritdoc IDelegationContract
     function nominateDelegate(address delegate) external onlyOwner notTerminated {
+        _settle();
+
         if (delegate == address(0)) revert ZeroAddress();
         if (delegate == OWNER) revert OwnerCannotBeDelegate();
         if (delegate == _currentDelegate) revert AlreadyDelegate();
         if (delegate == _pendingDelegate) revert AlreadyPendingDelegate();
-
-        _settle();
 
         uint256 activeFrom = block.timestamp + COOLDOWN;
         _pendingDelegate = delegate;
@@ -116,8 +116,6 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
         if (msg.sender != getDelegate()) revert NotDelegate();
         if (target == address(0)) revert ZeroAddress();
         if (target == address(this)) revert CannotCallSelf();
-        // Review: This check will prevent sending ETH from the delegation contract to EOAs but not to contracts.
-        if (target.code.length == 0) revert TargetNotContract();
 
         bool success;
         // solhint-disable-next-line avoid-low-level-calls

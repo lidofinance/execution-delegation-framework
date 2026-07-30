@@ -18,7 +18,7 @@ contract ReentrantMock {
         DC.execute(address(this), "");
     }
 
-    function reenternominateDelegate() external {
+    function reenterNominateDelegate() external {
         DC.nominateDelegate(address(0xbeef));
     }
 
