@@ -24,7 +24,7 @@ A per-entity, non-upgradeable contract that:
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  1. Owner deploys DelegationContract via DelegationFactory                  │
 │  2. DelegationContract receives protocol permissions                        │
-│  3. Owner nominates the delegate (or sets it in the same deployment)       │
+│  3. Owner nominates the delegate (or sets it in the same deployment)        │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -74,8 +74,8 @@ A per-entity, non-upgradeable contract that:
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            KEY ROTATION                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Owner calls nominateDelegate(newDelegate): old delegate stays effective until│
-│  the cooldown elapses, then the new delegate takes over seamlessly.         │
+│  Owner calls nominateDelegate(newDelegate): old delegate stays effective    │
+│  until the cooldown elapses, then the new delegate takes over seamlessly.   │
 │  Owner calls revokeDelegate() to drop a compromised delegate immediately.   │
 │  No governance vote required for either action.                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -84,7 +84,7 @@ A per-entity, non-upgradeable contract that:
 │                          EMERGENCY TERMINATION                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  If the Owner key itself is suspected compromised, the Owner calls          │
-│  terminate(): execute() and delegate reassignment are disabled forever.     │
+│  terminate(): execute() and delegate nomination are disabled forever.       │
 │  A fresh DelegationContract must then be deployed and the role reassigned.  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
