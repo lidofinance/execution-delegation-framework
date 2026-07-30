@@ -5,11 +5,12 @@ pragma solidity 0.8.35;
 
 /// @title IDelegationContract
 /// @notice Interface for the minimal Execution Delegation Framework (EDF) delegation contract:
-///         one owner, one active delegate, cooldown-gated reassignment, irreversible termination.
+///         one owner, one active delegate, cooldown-gated nomination, irreversible termination.
 interface IDelegationContract {
     // --- Events ---
 
     event DelegateNominated(address indexed newDelegate, uint256 activeFrom);
+    event InitialDelegateSet(address indexed newDelegate);
     event DelegateRevoked(address indexed revokedDelegate);
     event Terminated();
 
@@ -22,25 +23,29 @@ interface IDelegationContract {
     error ContractTerminated();
     error TargetNotContract();
     error CannotCallSelf();
+    error AlreadyDelegate();
+    error AlreadyPendingDelegate();
 
     // --- Owner controls ---
 
-    /// @notice Assign (or reassign) the active delegate.
+    /// @notice Nominate (or renominate) the active delegate.
     ///         Only callable by owner. The new delegate becomes effective only
     ///         after the contract's cooldown (`getCooldown()` seconds, or
     ///         immediately if cooldown is 0). The currently effective delegate
     ///         (if any) stays effective throughout the cooldown and is dropped
     ///         only when the new one activates.
-    ///         Reassigning before the cooldown elapses replaces the pending
+    ///         Renomination before the cooldown elapses replaces the pending
     ///         delegate and restarts the cooldown; the current one stays
     ///         effective throughout. To drop a (e.g. compromised) delegate
     ///         immediately, use revokeDelegate().
     ///         Reverts if delegate == address(0); removing a delegate is only
     ///         possible via revokeDelegate().
     ///         Reverts if delegate == owner.
+    ///         Reverts if delegate == the current effective delegate.
+    ///         Reverts if delegate == the pending delegate (if any).
     ///         Reverts if the contract is terminated.
     /// @param delegate Address of the incoming delegate.
-    function assignDelegate(address delegate) external;
+    function nominateDelegate(address delegate) external;
 
     /// @notice Immediately remove the current and pending delegate.
     ///         Only callable by owner.
@@ -48,8 +53,8 @@ interface IDelegationContract {
     function revokeDelegate() external;
 
     /// @notice Terminate the contract, permanently disabling execute(), signature
-    ///         verification via isValidSignature(), and further delegate reassignment
-    ///         via assignDelegate.
+    ///         verification via isValidSignature(), and further delegate nomination
+    ///         via nominateDelegate.
     ///         Only callable by owner.
     ///         Also clears the active delegate (as revokeDelegate), so
     ///         getDelegate() returns address(0) after termination.
@@ -78,7 +83,7 @@ interface IDelegationContract {
     ///         returns 0xffffffff.
     ///         The delegate is resolved via getDelegate(), so validation
     ///         fails closed when there is no effective delegate (never
-    ///         assigned, revoked, or terminated → address(0)).
+    ///         nominated, revoked, or terminated → address(0)).
     ///
     ///         NOTE: unlike a raw ECDSA check, this result is state-dependent
     ///         and revocable — it can return valid at one block and invalid at
@@ -103,16 +108,16 @@ interface IDelegationContract {
     function owner() external view returns (address);
 
     /// @notice Returns the currently *effective* delegate, or address(0) if
-    ///         none. After assignDelegate(), the previously effective delegate
+    ///         none. After nominateDelegate(), the previously effective delegate
     ///         remains the effective one until the new delegate's cooldown
     ///         elapses; only then does this return the new delegate. Returns
-    ///         address(0) when there is no current delegate (never assigned, or
+    ///         address(0) when there is no current delegate (never nominated, or
     ///         revoked) and once the contract is terminated.
     function getDelegate() external view returns (address);
 
     /// @notice Returns the pending (not-yet-effective) delegate and the
     ///         timestamp at which it becomes effective, or (address(0), 0) when
-    ///         there is no such pending assignment. The result is
+    ///         there is no such nomination. The result is
     ///         time-dependent: a scheduled delegate is returned here only while
     ///         block.timestamp < activeFrom. From that moment on it is the
     ///         effective delegate — getDelegate() starts returning it and this
@@ -120,7 +125,7 @@ interface IDelegationContract {
     ///         the transition.
     function getPendingDelegate() external view returns (address delegate, uint256 activeFrom);
 
-    /// @notice Cooldown in seconds between assigning a delegate and it
+    /// @notice Cooldown in seconds between nominating a delegate and it
     ///         becoming effective. Set in the constructor (Solidity immutable)
     ///         and unchangeable thereafter.
     function getCooldown() external view returns (uint256);

@@ -11,11 +11,11 @@ import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/Sig
 
 /// @title DelegationContract
 /// @notice Minimal, non-upgradeable delegation contract implementing the Execution Delegation
-///         Framework (EDF): one owner, one active delegate. The owner assigns and revokes
+///         Framework (EDF): one owner, one active delegate. The owner nominates and revokes
 ///         the delegate; the delegate dispatches calls via execute() (push) or
 ///         signs messages verified via ERC-1271 isValidSignature (pull).
-/// @dev The owner can never execute() or sign on the contract's behalf. Delegate assignment
-///      is cooldown-gated so a compromised-owner reassignment is visible before it takes
+/// @dev The owner can never execute() or sign on the contract's behalf. Delegate nomination
+///      is cooldown-gated so a compromised-owner nomination is visible before it takes
 ///      effect; revocation and termination are immediate.
 contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 {
     /// @notice EIP-1271 magic value returned on valid signature
@@ -26,10 +26,10 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
     /// @notice The owner address. Fixed for the contract's lifetime.
     address internal immutable OWNER;
 
-    /// @notice Seconds a reassigned delegate waits before becoming effective. May be 0.
+    /// @notice Seconds a nominated delegate waits before becoming effective. May be 0.
     uint256 internal immutable COOLDOWN;
 
-    /// @notice The currently effective delegate, once any matured pending assignment is settled.
+    /// @notice The currently effective delegate, once any matured nomination is settled.
     address private _currentDelegate;
 
     /// @notice The scheduled (not-yet-effective) delegate, or address(0) if none is pending.
@@ -54,22 +54,27 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
     /// @notice Creates a new DelegationContract.
     /// @param owner_    The contract's owner, fixed for the lifetime of the contract.
     /// @param delegate_ Initial active delegate, effective immediately. Pass address(0) for none.
-    /// @param cooldown_ Seconds a reassigned delegate waits before becoming effective. May be 0.
+    /// @param cooldown_ Seconds a nominated delegate waits before becoming effective. May be 0.
     constructor(address owner_, address delegate_, uint256 cooldown_) {
         if (owner_ == address(0)) revert ZeroAddress();
         if (delegate_ == owner_) revert OwnerCannotBeDelegate();
 
         OWNER = owner_;
         COOLDOWN = cooldown_;
-        _currentDelegate = delegate_;
+        if (delegate_ != address(0)) {
+            _currentDelegate = delegate_;
+            emit InitialDelegateSet(delegate_);
+        }
     }
 
     /// @inheritdoc IDelegationContract
-    function assignDelegate(address delegate) external onlyOwner notTerminated {
+    function nominateDelegate(address delegate) external onlyOwner notTerminated {
+        _settle();
+
         if (delegate == address(0)) revert ZeroAddress();
         if (delegate == OWNER) revert OwnerCannotBeDelegate();
-
-        _settle();
+        if (delegate == _currentDelegate) revert AlreadyDelegate();
+        if (delegate == _pendingDelegate) revert AlreadyPendingDelegate();
 
         uint256 activeFrom = block.timestamp + COOLDOWN;
         _pendingDelegate = delegate;
@@ -111,7 +116,6 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
         if (msg.sender != getDelegate()) revert NotDelegate();
         if (target == address(0)) revert ZeroAddress();
         if (target == address(this)) revert CannotCallSelf();
-        if (target.code.length == 0) revert TargetNotContract();
 
         bool success;
         // solhint-disable-next-line avoid-low-level-calls
@@ -180,7 +184,7 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
         return _currentDelegate;
     }
 
-    /// @notice Folds a matured pending assignment into `_currentDelegate` before a new
+    /// @notice Folds a matured nomination into `_currentDelegate` before a new
     ///         state-changing assignment is applied, so a later rotation never reverts to
     ///         an earlier delegate.
     function _settle() internal {

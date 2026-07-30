@@ -41,22 +41,35 @@ contract DelegationFactoryTest is DelegationFactoryBaseTest {
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
-        assertEq(logs.length, 1, "Expected exactly one log to be emitted");
-        assertEq(logs[0].topics[0], keccak256("DelegationContractDeployed(address,address,address,uint256)"));
-        assertEq(logs[0].topics[1], bytes32(uint256(uint160(instance))));
-        assertEq(logs[0].topics[2], bytes32(uint256(uint160(owner))));
-        assertEq(logs[0].topics[3], bytes32(uint256(uint160(delegate))));
-        assertEq(abi.decode(logs[0].data, (uint256)), cooldown);
+        assertEq(logs.length, 2, "Expected two logs to be emitted");
+        assertEq(logs[0].topics[0], keccak256("InitialDelegateSet(address)"));
+        assertEq(logs[0].topics[1], bytes32(uint256(uint160(delegate))));
+        assertEq(logs[1].topics[0], keccak256("DelegationContractDeployed(address,address,address,uint256)"));
+        assertEq(logs[1].topics[1], bytes32(uint256(uint160(instance))));
+        assertEq(logs[1].topics[2], bytes32(uint256(uint160(owner))));
+        assertEq(logs[1].topics[3], bytes32(uint256(uint160(delegate))));
+        assertEq(abi.decode(logs[1].data, (uint256)), cooldown);
     }
 
     function test_deploy_zeroDelegate() public {
         address owner = nextAddress("OWNER");
         uint256 cooldown = 1 days;
 
+        vm.recordLogs();
+
         address instance = delegationFactory.deploy(owner, address(0), cooldown);
 
         DelegationContract dc = DelegationContract(payable(instance));
         assertEq(dc.getDelegate(), address(0));
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        assertEq(logs.length, 1, "Expected one log to be emitted");
+        assertEq(logs[0].topics[0], keccak256("DelegationContractDeployed(address,address,address,uint256)"));
+        assertEq(logs[0].topics[1], bytes32(uint256(uint160(instance))));
+        assertEq(logs[0].topics[2], bytes32(uint256(uint160(owner))));
+        assertEq(logs[0].topics[3], bytes32(uint256(uint160(address(0)))));
+        assertEq(abi.decode(logs[0].data, (uint256)), cooldown);
     }
 
     function test_deploy_revertWhen_ZeroOwner() public {
