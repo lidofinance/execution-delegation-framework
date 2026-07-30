@@ -32,13 +32,15 @@ contract DelegationHandler is CommonBase, StdUtils {
         everDelegate[initialDelegate] = true;
     }
 
-    function assign(uint160 seed) external {
+    function nominate(uint160 seed) external {
         if (ghostTerminated) return;
         address newDelegate = address(uint160(bound(seed, 1, type(uint160).max)));
         if (newDelegate == OWNER) return;
+        if (newDelegate == ghostCurrent) return;
+        if (newDelegate == ghostPending) return;
 
         vm.prank(OWNER);
-        DC.assignDelegate(newDelegate);
+        DC.nominateDelegate(newDelegate);
 
         _settleGhost();
         ghostPending = newDelegate;

@@ -96,8 +96,8 @@ contract DelegationContractConstructorTest is DelegationContractBaseTest {
     }
 }
 
-contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithDeployment {
-    function test_assignDelegate_schedulesPending() public {
+contract DelegationContractnominateDelegateTest is DelegationContractBaseTestWithDeployment {
+    function test_nominateDelegate_schedulesPending() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
         uint256 expectedActiveFrom = block.timestamp + cooldown;
 
@@ -105,7 +105,7 @@ contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithD
         emit IDelegationContract.DelegateNominated(newDelegate, expectedActiveFrom);
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         assertEq(delegationContract.getDelegate(), delegate, "Old delegate should remain effective during cooldown");
 
@@ -114,11 +114,11 @@ contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithD
         assertEq(activeFrom, expectedActiveFrom);
     }
 
-    function test_assignDelegate_becomesEffectiveAfterCooldown() public {
+    function test_nominateDelegate_becomesEffectiveAfterCooldown() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         vm.warp(block.timestamp + cooldown);
 
@@ -129,27 +129,27 @@ contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithD
         assertEq(activeFrom, 0);
     }
 
-    function test_assignDelegate_zeroCooldown_effectiveImmediately() public {
+    function test_nominateDelegate_zeroCooldown_effectiveImmediately() public {
         DelegationContract dc = new DelegationContract(owner, delegate, 0);
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
-        dc.assignDelegate(newDelegate);
+        dc.nominateDelegate(newDelegate);
 
         assertEq(dc.getDelegate(), newDelegate, "Delegate should activate immediately when cooldown is 0");
     }
 
-    function test_assignDelegate_reassignBeforeMaturity_restartsCooldownAndDropsFirstPending() public {
+    function test_nominateDelegate_nominateBeforeMaturity_restartsCooldownAndDropsFirstPending() public {
         address firstNewDelegate = nextAddress("FIRST_NEW_DELEGATE");
         address secondNewDelegate = nextAddress("SECOND_NEW_DELEGATE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(firstNewDelegate);
+        delegationContract.nominateDelegate(firstNewDelegate);
 
         vm.warp(block.timestamp + cooldown / 2);
 
         vm.prank(owner);
-        delegationContract.assignDelegate(secondNewDelegate);
+        delegationContract.nominateDelegate(secondNewDelegate);
 
         assertEq(delegationContract.getDelegate(), delegate, "Original delegate should still be effective");
 
@@ -166,18 +166,18 @@ contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithD
         assertEq(delegationContract.getDelegate(), secondNewDelegate);
     }
 
-    function test_assignDelegate_reassignAfterMaturity_settlesMaturedDelegateFirst() public {
+    function test_nominateDelegate_nominateAfterMaturity_settlesMaturedDelegateFirst() public {
         address firstNewDelegate = nextAddress("FIRST_NEW_DELEGATE");
         address secondNewDelegate = nextAddress("SECOND_NEW_DELEGATE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(firstNewDelegate);
+        delegationContract.nominateDelegate(firstNewDelegate);
 
         vm.warp(block.timestamp + cooldown);
         assertEq(delegationContract.getDelegate(), firstNewDelegate);
 
         vm.prank(owner);
-        delegationContract.assignDelegate(secondNewDelegate);
+        delegationContract.nominateDelegate(secondNewDelegate);
 
         assertEq(
             delegationContract.getDelegate(),
@@ -193,34 +193,51 @@ contract DelegationContractAssignDelegateTest is DelegationContractBaseTestWithD
         assertEq(delegationContract.getDelegate(), secondNewDelegate);
     }
 
-    function test_assignDelegate_revertWhen_ZeroDelegate() public {
+    function test_nominateDelegate_revertWhen_ZeroDelegate() public {
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ZeroAddress.selector));
         vm.prank(owner);
-        delegationContract.assignDelegate(address(0));
+        delegationContract.nominateDelegate(address(0));
     }
 
-    function test_assignDelegate_revertWhen_OwnerIsDelegate() public {
+    function test_nominateDelegate_revertWhen_OwnerIsDelegate() public {
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.OwnerCannotBeDelegate.selector));
         vm.prank(owner);
-        delegationContract.assignDelegate(owner);
+        delegationContract.nominateDelegate(owner);
     }
 
-    function test_assignDelegate_revertWhen_NotOwner() public {
+    function test_nominateDelegate_revertWhen_AlreadyDelegate() public {
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.AlreadyDelegate.selector));
+        vm.prank(owner);
+        delegationContract.nominateDelegate(delegate);
+    }
+
+    function test_nominateDelegate_revertWhen_AlreadyPendingDelegate() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.AlreadyPendingDelegate.selector));
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+    }
+
+    function test_nominateDelegate_revertWhen_NotOwner() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
         address notOwner = nextAddress("NOT_OWNER");
 
         vm.prank(notOwner);
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
     }
 
-    function test_assignDelegate_revertWhen_Terminated() public {
+    function test_nominateDelegate_revertWhen_Terminated() public {
         vm.prank(owner);
         delegationContract.terminate();
 
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ContractTerminated.selector));
-        delegationContract.assignDelegate(nextAddress("NEW_DELEGATE"));
+        delegationContract.nominateDelegate(nextAddress("NEW_DELEGATE"));
     }
 }
 
@@ -235,11 +252,11 @@ contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithD
         assertEq(delegationContract.getDelegate(), address(0));
     }
 
-    function test_revokeDelegate_clearsPendingAssignmentToo() public {
+    function test_revokeDelegate_clearsPendingDelegateToo() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         vm.prank(owner);
         delegationContract.revokeDelegate();
@@ -247,7 +264,7 @@ contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithD
         assertEq(delegationContract.getDelegate(), address(0));
 
         vm.warp(block.timestamp + cooldown);
-        assertEq(delegationContract.getDelegate(), address(0), "Revoked pending assignment must never activate");
+        assertEq(delegationContract.getDelegate(), address(0), "Revoked pending delegate must never activate");
 
         (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
         assertEq(pending, address(0));
@@ -297,21 +314,17 @@ contract DelegationContractTerminateTest is DelegationContractBaseTestWithDeploy
         assertEq(delegationContract.getDelegate(), address(0));
     }
 
-    function test_terminate_clearsPendingAssignment() public {
+    function test_terminate_clearsPendingDelegate() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         vm.prank(owner);
         delegationContract.terminate();
 
         vm.warp(block.timestamp + cooldown);
-        assertEq(
-            delegationContract.getDelegate(),
-            address(0),
-            "Pending assignment must never activate post-termination"
-        );
+        assertEq(delegationContract.getDelegate(), address(0), "Pending delegate must never activate post-termination");
     }
 
     function test_terminate_revertWhen_NotOwner() public {
@@ -331,13 +344,13 @@ contract DelegationContractTerminateTest is DelegationContractBaseTestWithDeploy
         delegationContract.terminate();
     }
 
-    function test_terminate_thenAssignDelegate_reverts() public {
+    function test_terminate_thennominateDelegate_reverts() public {
         vm.prank(owner);
         delegationContract.terminate();
 
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ContractTerminated.selector));
-        delegationContract.assignDelegate(nextAddress("NEW_DELEGATE"));
+        delegationContract.nominateDelegate(nextAddress("NEW_DELEGATE"));
     }
 
     function test_terminate_thenRevokeDelegate_reverts() public {
@@ -481,7 +494,7 @@ contract DelegationContractIsValidSignatureTest is DelegationContractBaseTest {
         address newDelegate = vm.addr(privateKeyForNewDelegate);
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         bytes32 hash = keccak256("TEST_HASH");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyForDelegate, hash);
@@ -494,7 +507,7 @@ contract DelegationContractIsValidSignatureTest is DelegationContractBaseTest {
         address newDelegate = vm.addr(privateKeyForNewDelegate);
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         vm.warp(block.timestamp + cooldown);
 
@@ -563,7 +576,7 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(newDelegate);
+        delegationContract.nominateDelegate(newDelegate);
 
         bytes memory callData = abi.encodeWithSelector(callableMock.isOdd.selector, 3);
 
@@ -654,14 +667,14 @@ contract DelegationContractExecuteTest is DelegationContractBaseTestWithDeployme
         delegationContract.execute(address(reentrant), abi.encodeWithSelector(ReentrantMock.reenterExecute.selector));
     }
 
-    function test_execute_reentrantAssignDelegate_revertsWithNotOwner() public {
+    function test_execute_reentrantnominateDelegate_revertsWithNotOwner() public {
         ReentrantMock reentrant = new ReentrantMock(delegationContract);
 
         vm.prank(delegate);
         vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
         delegationContract.execute(
             address(reentrant),
-            abi.encodeWithSelector(ReentrantMock.reenterAssignDelegate.selector)
+            abi.encodeWithSelector(ReentrantMock.reenternominateDelegate.selector)
         );
     }
 
@@ -736,7 +749,7 @@ contract DelegationContractFuzzTest is DelegationContractBaseTestWithDeployment 
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
-        dc.assignDelegate(newDelegate);
+        dc.nominateDelegate(newDelegate);
         uint256 activeFrom = block.timestamp + cooldown_;
 
         vm.warp(block.timestamp + warpBy);
@@ -757,11 +770,11 @@ contract DelegationContractFuzzTest is DelegationContractBaseTestWithDeployment 
         address secondNominee = nextAddress("SECOND_NOMINEE");
 
         vm.prank(owner);
-        delegationContract.assignDelegate(firstNominee);
+        delegationContract.nominateDelegate(firstNominee);
 
         vm.warp(block.timestamp + replaceAfter);
         vm.prank(owner);
-        delegationContract.assignDelegate(secondNominee);
+        delegationContract.nominateDelegate(secondNominee);
         uint256 secondActiveFrom = block.timestamp + cooldown;
 
         vm.warp(block.timestamp + warpBy);
@@ -775,7 +788,7 @@ contract DelegationContractFuzzTest is DelegationContractBaseTestWithDeployment 
         warpBy = bound(warpBy, 0, 10 * 365 days);
 
         vm.prank(owner);
-        delegationContract.assignDelegate(nextAddress("NEW_DELEGATE"));
+        delegationContract.nominateDelegate(nextAddress("NEW_DELEGATE"));
 
         vm.prank(owner);
         delegationContract.terminate();

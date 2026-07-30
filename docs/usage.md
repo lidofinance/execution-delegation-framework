@@ -37,13 +37,13 @@ Via `just` (owner-only commands need `--account Owner`; view commands need no si
 
 | Command                                                   | Description                                           | Who can call |
 |-----------------------------------------------------------|-------------------------------------------------------|--------------|
-| `just assign-delegate-live <contract> <newDelegate>`      | Schedule a new delegate, effective after the cooldown | Owner only   |
+| `just nominate-delegate-live <contract> <newDelegate>`    | Schedule a new delegate, effective after the cooldown | Owner only   |
 | `just revoke-delegate-live <contract>`                    | Remove delegate access immediately                    | Owner only   |
 | `just terminate-live <contract>`                          | Irreversibly disable the contract (owner compromise)  | Owner only   |
 | `just get-owner <contract> --rpc-url $RPC_URL`            | View the owner address                                | Anyone       |
 | `just get-delegate <contract> --rpc-url $RPC_URL`         | View the currently effective delegate                 | Anyone       |
 | `just get-pending-delegate <contract> --rpc-url $RPC_URL` | View the scheduled delegate and its activation time   | Anyone       |
-| `just get-cooldown <contract> --rpc-url $RPC_URL`         | View the reassignment cooldown, in seconds            | Anyone       |
+| `just get-cooldown <contract> --rpc-url $RPC_URL`         | View the nomination cooldown, in seconds              | Anyone       |
 | `just is-terminated <contract> --rpc-url $RPC_URL`        | View whether the contract has been terminated         | Anyone       |
 
-Local `anvil` testing uses the same commands without the `-live` suffix (`assign-delegate`, `revoke-delegate`, `terminate`, `deploy-delegate`), defaulting to the local anvil RPC URL instead of `$RPC_URL`.
+Local `anvil` testing uses the same commands without the `-live` suffix (`nominate-delegate`, `revoke-delegate`, `terminate`, `deploy-delegate`), defaulting to the local anvil RPC URL instead of `$RPC_URL`.
