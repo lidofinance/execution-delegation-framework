@@ -4,7 +4,7 @@ This guide covers repo-maintainer tasks: deploying the `DelegationFactory` itsel
 
 ## Prerequisites
 
-- [Foundry](https://getfoundry.sh/) (`forge`/`cast`) and [`just`](https://github.com/casey/just) installed
+- [Foundry](https://getfoundry.sh/) (`forge`/`cast`, see `.foundryref`) and [`just`](https://github.com/casey/just) installed
 - Node.js (see `.nvmrc`) and [Yarn](https://yarnpkg.com/) (via Corepack)
 - `jq` on your `PATH` — required by the `deploy-delegate`/`deploy-delegate-live` commands, which read the factory address from the deploy artifact JSON
 
@@ -80,7 +80,7 @@ git add artifacts/hoodi/
 git commit -m "chore: add hoodi deployment artifacts"
 ```
 
-`deploy-live` and `deploy-delegate-live`/`assign-delegate-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
+`deploy-live` and `deploy-delegate-live`/`nominate-delegate-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
 
 ## CLI Command Reference
 
@@ -121,8 +121,8 @@ Owner-only commands broadcast a real transaction and prompt for confirmation on 
 |-----------------------------------------------------------|-----------------------------------------------------------|--------------|
 | `just deploy-delegate <owner> <delegate> <cooldown>`      | Deploy a `DelegationContract` via the factory (anvil)     | Anyone       |
 | `just deploy-delegate-live <owner> <delegate> <cooldown>` | Same, on a live network                                   | Anyone       |
-| `just assign-delegate <contract> <newDelegate>`           | Schedule a new delegate, effective after cooldown (anvil) | Owner only   |
-| `just assign-delegate-live <contract> <newDelegate>`      | Same, on a live network                                   | Owner only   |
+| `just nominate-delegate <contract> <newDelegate>`         | Schedule a new delegate, effective after cooldown (anvil) | Owner only   |
+| `just nominate-delegate-live <contract> <newDelegate>`    | Same, on a live network                                   | Owner only   |
 | `just revoke-delegate <contract>`                         | Remove delegate access immediately (anvil)                | Owner only   |
 | `just revoke-delegate-live <contract>`                    | Same, on a live network                                   | Owner only   |
 | `just terminate <contract>`                               | Irreversibly disable the contract (anvil)                 | Owner only   |
@@ -130,7 +130,7 @@ Owner-only commands broadcast a real transaction and prompt for confirmation on 
 | `just get-owner <contract> --rpc-url <url>`               | View the owner address                                    | Anyone       |
 | `just get-delegate <contract> --rpc-url <url>`            | View the currently effective delegate                     | Anyone       |
 | `just get-pending-delegate <contract> --rpc-url <url>`    | View the scheduled delegate and its activation time       | Anyone       |
-| `just get-cooldown <contract> --rpc-url <url>`            | View the reassignment cooldown, in seconds                | Anyone       |
+| `just get-cooldown <contract> --rpc-url <url>`            | View the nomination cooldown, in seconds                  | Anyone       |
 | `just is-terminated <contract> --rpc-url <url>`           | View whether the contract has been terminated             | Anyone       |
 
 Local `anvil` commands accept a signer via `--private-key <key>` or `--unlocked --from <address>` (anvil's default dev accounts are pre-funded and unlocked); live commands typically use `--account <name>` with a key imported via `cast wallet import`.

@@ -75,6 +75,7 @@ _info message:
 
 # Recipe modules
 import? ".local.just"
+import "commands.just"
 
 # Default and top-level workflows
 default: clean deps build test-unit
@@ -107,14 +108,14 @@ lint:
 
 # Run all unit tests
 test-unit *args:
-    env -u FOUNDRY_THREADS forge test --skip script --match-path 'test/unit/**' -vvv {{args}}
+    env -u FOUNDRY_THREADS forge test --skip script --match-path 'test/unit/**' {{args}}
 
 coverage *args:
     FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' {{args}}
 
 # Run coverage, print the summary table, and save the report in LCOV file.
 coverage-lcov *args:
-    FOUNDRY_PROFILE=coverage forge coverage --no-match-coverage '(test|script)' --no-match-path 'test/fork/*' --report summary --report lcov {{args}}
+    just coverage --report summary --report lcov {{args}}
 
 # Run coverage and fail if line/statement/branch/function coverage is below 100%.
 coverage-check *args:
@@ -198,46 +199,3 @@ verify-delegate-live contract owner delegate cooldown *args:
         --compiler-version 0.8.35 \
         --constructor-args $(cast abi-encode "constructor(address,address,uint256)" {{owner}} {{delegate}} {{cooldown}}) \
         {{args}}
-
-# Owner: assign (or reassign) the delegate; effective after the contract's cooldown (anvil)
-assign-delegate contract new_delegate *args:
-    cast send {{contract}} "assignDelegate(address)" {{new_delegate}} --rpc-url {{anvil_rpc_url}} {{args}}
-
-# Owner: assign (or reassign) the delegate; effective after the contract's cooldown (live)
-[confirm("You are about to broadcast a transaction to the network. Are you sure?")]
-assign-delegate-live contract new_delegate *args:
-    cast send {{contract}} "assignDelegate(address)" {{new_delegate}} --rpc-url ${RPC_URL} {{args}}
-
-# Owner: immediately remove the current and pending delegate (anvil)
-revoke-delegate contract *args:
-    cast send {{contract}} "revokeDelegate()" --rpc-url {{anvil_rpc_url}} {{args}}
-
-# Owner: immediately remove the current and pending delegate (live)
-[confirm("You are about to broadcast a transaction to the network. Are you sure?")]
-revoke-delegate-live contract *args:
-    cast send {{contract}} "revokeDelegate()" --rpc-url ${RPC_URL} {{args}}
-
-# Owner: irreversibly terminate the contract, e.g. if the owner key is suspected compromised (anvil)
-terminate contract *args:
-    cast send {{contract}} "terminate()" --rpc-url {{anvil_rpc_url}} {{args}}
-
-# Owner: irreversibly terminate the contract, e.g. if the owner key is suspected compromised (live)
-[confirm("This is IRREVERSIBLE: it permanently disables execute() and delegate reassignment. Are you sure?")]
-terminate-live contract *args:
-    cast send {{contract}} "terminate()" --rpc-url ${RPC_URL} {{args}}
-
-# Views: pass --rpc-url yourself (e.g. --rpc-url {{anvil_rpc_url}} or --rpc-url $RPC_URL)
-get-owner contract *args:
-    cast call {{contract}} "owner()(address)" {{args}}
-
-get-delegate contract *args:
-    cast call {{contract}} "getDelegate()(address)" {{args}}
-
-get-pending-delegate contract *args:
-    cast call {{contract}} "getPendingDelegate()(address,uint256)" {{args}}
-
-get-cooldown contract *args:
-    cast call {{contract}} "getCooldown()(uint256)" {{args}}
-
-is-terminated contract *args:
-    cast call {{contract}} "isTerminated()(bool)" {{args}}

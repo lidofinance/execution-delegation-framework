@@ -17,7 +17,7 @@ This repository implements the EDF as specified in [LIP-37](https://github.com/l
    - All authority is mediated by the on-chain delegation contract
 2. **Owner controls delegation**
    - Each delegation contract has an Owner, fixed at deployment
-   - Owner can assign or revoke the delegate; reassignment is cooldown-gated, revocation is immediate
+   - Owner can nominate or revoke the delegate; nomination is cooldown-gated, revocation is immediate
    - Owner can irreversibly `terminate()` the contract if the owner itself is suspected compromised
 3. **Protocol trusts Delegation contracts**
    - Delegation contracts can have only one owner and one active delegate
@@ -37,7 +37,7 @@ This repository implements the EDF as specified in [LIP-37](https://github.com/l
 ## Documentation
 
 - [Architecture](docs/architecture.md) — the `DelegationFactory`/`DelegationContract` design and how delegation, rotation, and termination work
-- [Usage Guide](docs/usage.md) — deploying the `DelegationFactory`, deploying a `DelegationContract` through it, and managing delegation (assign/revoke/terminate/views) via the `just` CLI or manually through Etherscan
+- [Usage Guide](docs/usage.md) — deploying the `DelegationFactory`, deploying a `DelegationContract` through it, and managing delegation (nominate/revoke/terminate/views) via the `just` CLI or manually through Etherscan
 - [Development Guide](docs/development.md) — deploying/verifying the `DelegationFactory` itself and a full reference of every `just` command in this repo
 
 # License
