@@ -296,6 +296,9 @@ contract DelegationContractRevokeNominationTest is DelegationContractBaseTestWit
         (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
         assertEq(pending, address(0));
         assertEq(activeFrom, 0);
+
+        address currentDelegate = delegationContract.getDelegate();
+        assertEq(currentDelegate, delegate, "Current delegate should remain effective after revoking nomination");
     }
 
     function test_revokeNomination_revertWhen_NoPendingDelegate() public {

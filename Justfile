@@ -177,7 +177,11 @@ deploy-delegate owner delegate cooldown *args:
     set -euo pipefail
     factory=$(jq -r ".DelegationFactory" "{{local_deploy_config_path}}")
     receipt=$(cast send "$factory" "deploy(address,address,uint256)" {{owner}} {{delegate}} {{cooldown}} --rpc-url {{anvil_rpc_url}} --json {{args}})
-    topic=$(echo "$receipt" | jq -r '.logs[1].topics[1]')
+    if [ $delegate == "0x0000000000000000000000000000000000000000" ]; then
+        topic=$(echo "$receipt" | jq -r '.logs[0].topics[1]')
+    else
+        topic=$(echo "$receipt" | jq -r '.logs[1].topics[1]')
+    fi
     just _info "Deployed DelegationContract at 0x${topic: -40}"
 
 # Deploy a new DelegationContract via the factory recorded in the live deploy artifact (mainnet or hoodi)
@@ -187,7 +191,11 @@ deploy-delegate-live owner delegate cooldown *args:
     set -euo pipefail
     factory=$(jq -r ".DelegationFactory" "{{latest_deploy_config_path}}")
     receipt=$(cast send "$factory" "deploy(address,address,uint256)" {{owner}} {{delegate}} {{cooldown}} --rpc-url ${RPC_URL} --json {{args}})
-    topic=$(echo "$receipt" | jq -r '.logs[1].topics[1]')
+    if [ $delegate == "0x0000000000000000000000000000000000000000" ]; then
+        topic=$(echo "$receipt" | jq -r '.logs[0].topics[1]')
+    else
+        topic=$(echo "$receipt" | jq -r '.logs[1].topics[1]')
+    fi
     just _info "Deployed DelegationContract at 0x${topic: -40}"
 
 # Verify a deployed DelegationContract on Etherscan (live)
