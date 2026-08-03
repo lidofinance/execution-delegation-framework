@@ -280,6 +280,70 @@ contract DelegationContractNominateDelegateTest is DelegationContractBaseTestWit
     }
 }
 
+contract DelegationContractRevokeNominationTest is DelegationContractBaseTestWithDeployment {
+    function test_revokeNomination() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.expectEmit();
+        emit IDelegationContract.NominationRevoked(newDelegate);
+
+        vm.prank(owner);
+        delegationContract.revokeNomination();
+
+        (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
+        assertEq(pending, address(0));
+        assertEq(activeFrom, 0);
+    }
+
+    function test_revokeNomination_revertWhen_NoPendingDelegate() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NoPendingDelegate.selector));
+        delegationContract.revokeNomination();
+    }
+
+    function test_revokeNomination_revertWhen_NotOwner() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+        address notOwner = nextAddress("NOT_OWNER");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
+        delegationContract.revokeNomination();
+    }
+
+    function test_revokeNomination_revertWhen_Terminated() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.prank(owner);
+        delegationContract.terminate();
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ContractTerminated.selector));
+        delegationContract.revokeNomination();
+    }
+
+    function test_revokeNomination_revertWhen_PendingDelegateAlreadyMatured() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.warp(block.timestamp + cooldown);
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NoPendingDelegate.selector));
+        delegationContract.revokeNomination();
+    }
+}
+
 contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithDeployment {
     function test_revokeDelegate_clearsCurrentImmediately() public {
         vm.expectEmit();
