@@ -7,6 +7,15 @@ nominate-delegate contract new_delegate *args:
 nominate-delegate-live contract new_delegate *args:
     cast send {{contract}} "nominateDelegate(address)" {{new_delegate}} --rpc-url ${RPC_URL} {{args}}
 
+# Owner: revoke currently nominated delegate (anvil)
+revoke-nomination contract *args:
+    cast send {{contract}} "revokeNomination()" --rpc-url {{anvil_rpc_url}} {{args}}
+
+# Owner: revoke currently nominated delegate (live)
+[confirm("You are about to broadcast a transaction to the network. Are you sure?")]
+revoke-nomination-live contract *args:
+    cast send {{contract}} "revokeNomination()" --rpc-url ${RPC_URL} {{args}}
+
 # Owner: immediately remove the current and pending delegate (anvil)
 revoke-delegate contract *args:
     cast send {{contract}} "revokeDelegate()" --rpc-url {{anvil_rpc_url}} {{args}}

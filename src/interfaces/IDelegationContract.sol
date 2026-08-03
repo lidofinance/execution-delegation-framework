@@ -10,6 +10,7 @@ interface IDelegationContract {
     // --- Events ---
 
     event DelegateNominated(address indexed newDelegate, uint256 activeFrom);
+    event NominationRevoked(address indexed revokedNomination);
     event InitialDelegateSet(address indexed newDelegate);
     event DelegateRevoked(address indexed revokedDelegate);
     event Terminated();
@@ -21,10 +22,10 @@ interface IDelegationContract {
     error ZeroAddress();
     error OwnerCannotBeDelegate();
     error ContractTerminated();
-    error TargetNotContract();
     error CannotCallSelf();
     error AlreadyDelegate();
     error AlreadyPendingDelegate();
+    error NoPendingDelegate();
 
     // --- Owner controls ---
 
@@ -46,6 +47,12 @@ interface IDelegationContract {
     ///         Reverts if the contract is terminated.
     /// @param delegate Address of the incoming delegate.
     function nominateDelegate(address delegate) external;
+
+    /// @notice Immediately remove the pending delegate (if any).
+    ///         Only callable by owner.
+    ///         Reverts if there is no pending delegate.
+    ///         Reverts if the contract is terminated.
+    function revokeNomination() external;
 
     /// @notice Immediately remove the current and pending delegate.
     ///         Only callable by owner.

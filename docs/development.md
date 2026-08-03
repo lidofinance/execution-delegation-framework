@@ -80,7 +80,7 @@ git add artifacts/hoodi/
 git commit -m "chore: add hoodi deployment artifacts"
 ```
 
-`deploy-live` and `deploy-delegate-live`/`nominate-delegate-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
+`deploy-live` and `deploy-delegate-live`/`nominate-delegate-live`/`revoke-nomination-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
 
 ## CLI Command Reference
 
@@ -125,6 +125,8 @@ Owner-only commands broadcast a real transaction and prompt for confirmation on 
 | `just nominate-delegate-live <contract> <newDelegate>`    | Same, on a live network                                   | Owner only   |
 | `just revoke-delegate <contract>`                         | Remove delegate access immediately (anvil)                | Owner only   |
 | `just revoke-delegate-live <contract>`                    | Same, on a live network                                   | Owner only   |
+| `just revoke-nomination <contract>`                       | Revoke currently nominated delegate (anvil)               | Owner only   |
+| `just revoke-nomination-live <contract>`                  | Same, on a live network                                   | Owner only   |
 | `just terminate <contract>`                               | Irreversibly disable the contract (anvil)                 | Owner only   |
 | `just terminate-live <contract>`                          | Same, on a live network                                   | Owner only   |
 | `just get-owner <contract> --rpc-url <url>`               | View the owner address                                    | Anyone       |

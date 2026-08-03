@@ -29,10 +29,10 @@ This repository implements the EDF as specified in [LIP-37](https://github.com/l
 
 ## Deployed Instances
 
-| Network | DelegationFactory Address |
-| ------- | ------------------------- |
-| Mainnet | _Not yet deployed_        |
-| Hoodi   | _Not yet deployed_        |
+| Network | DelegationFactory Address                                                                                                     |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Mainnet | _Not yet deployed_                                                                                                            |
+| Hoodi   | [`0x76Af23C7e71004038BeE4a1ceba8c441f4cA239b`](https://hoodi.etherscan.io/address/0x76Af23C7e71004038BeE4a1ceba8c441f4cA239b) |
 
 ## Documentation
 
