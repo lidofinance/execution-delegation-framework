@@ -56,6 +56,8 @@ interface IDelegationContract {
 
     /// @notice Immediately remove the current and pending delegate.
     ///         Only callable by owner.
+    ///         Emits NominationRevoked if a not-yet-effective nomination is
+    ///         dropped, in addition to DelegateRevoked.
     ///         Reverts if the contract is terminated.
     function revokeDelegate() external;
 
