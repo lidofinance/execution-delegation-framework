@@ -97,11 +97,18 @@ contract DelegationContract is IDelegationContract, IERC1271, IERC5313, IERC165 
 
     /// @inheritdoc IDelegationContract
     function revokeDelegate() external onlyOwner notTerminated {
-        address revoked = getDelegate();
+        _settle();
 
+        address pending = _pendingDelegate;
+        if (pending != address(0)) {
+            _pendingDelegate = address(0);
+            _pendingActiveFrom = 0;
+
+            emit NominationRevoked(pending);
+        }
+
+        address revoked = _currentDelegate;
         _currentDelegate = address(0);
-        _pendingDelegate = address(0);
-        _pendingActiveFrom = 0;
 
         emit DelegateRevoked(revoked);
     }

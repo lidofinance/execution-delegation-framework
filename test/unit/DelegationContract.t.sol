@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.35;
 
-import { Test } from "forge-std/Test.sol";
+import { Test, Vm } from "forge-std/Test.sol";
 
 import { IERC165 } from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import { IERC1271 } from "@openzeppelin/contracts/interfaces/IERC1271.sol";
@@ -375,6 +375,51 @@ contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithD
         (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
         assertEq(pending, address(0));
         assertEq(activeFrom, 0);
+    }
+
+    function test_revokeDelegate_emitsNominationRevokedForPending() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.expectEmit();
+        emit IDelegationContract.NominationRevoked(newDelegate);
+        vm.expectEmit();
+        emit IDelegationContract.DelegateRevoked(delegate);
+
+        vm.prank(owner);
+        delegationContract.revokeDelegate();
+    }
+
+    function test_revokeDelegate_noNominationRevokedWhenNoPending() public {
+        vm.recordLogs();
+
+        vm.prank(owner);
+        delegationContract.revokeDelegate();
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1, "Only DelegateRevoked should be emitted");
+        assertEq(logs[0].topics[0], IDelegationContract.DelegateRevoked.selector);
+    }
+
+    function test_revokeDelegate_noNominationRevokedWhenPendingMatured() public {
+        address newDelegate = nextAddress("NEW_DELEGATE");
+
+        vm.prank(owner);
+        delegationContract.nominateDelegate(newDelegate);
+
+        vm.warp(block.timestamp + cooldown);
+
+        vm.recordLogs();
+
+        vm.prank(owner);
+        delegationContract.revokeDelegate();
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1, "Matured pending is the effective delegate: only DelegateRevoked");
+        assertEq(logs[0].topics[0], IDelegationContract.DelegateRevoked.selector);
+        assertEq(address(uint160(uint256(logs[0].topics[1]))), newDelegate);
     }
 
     function test_revokeDelegate_noOpWhenNoDelegate() public {
