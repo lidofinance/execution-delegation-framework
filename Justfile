@@ -147,8 +147,13 @@ deploy-local-devnet chain_id *args:
         just _deploy-local-devnet-generic {{local_devnet_deploy_script_path}} {{anvil_rpc_url}} {{chain_id}} {{args}}
     just _finalize-broadcast-artifacts {{local_devnet_deploy_script_name}} {{anvil_rpc_url}} "" "run-latest.json" {{local_devnet_deploy_config_path}}
 
+# Fail when the working tree has uncommitted changes, so the git ref recorded
+# in the deploy artifact always matches the compiled sources
+_require-clean-tree:
+    @test -z "$(git status --porcelain)" || { just _warn "Working tree is dirty; commit or stash changes before deploying"; exit 1; }
+
 # Deploy to live network (mainnet or hoodi)
-deploy-live *args:
+deploy-live *args: _require-clean-tree
     just _warn "The current `tput bold`chain={{chain}}`tput sgr0` with the following rpc url: $RPC_URL"
     mkdir -p {{artifacts_latest_dir}}
     ARTIFACTS_DIR={{artifacts_latest_dir}} \
@@ -164,9 +169,57 @@ deploy-live-dry *args:
     just _finalize-broadcast-artifacts {{deploy_script_name}} $RPC_URL "/dry-run" "run-latest.json" {{local_deploy_config_path}}
 
 # Verify deployment on live network (mainnet or hoodi)
-verify-live *args:
+verify-live *args: _require-clean-tree
     just _warn "Pass --chain=your_chain manually when running deployments"
     just _verify-live-generic {{deploy_script_path}} {{args}}
+
+# Check a committed deploy artifact against the current checkout and the live network:
+# compares the recorded creation-code hashes with the local build and the on-chain
+# factory bytecode with the local build. Requires: jq, $RPC_URL.
+check-deployment artifact_path=deploy_config_path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    artifact="{{artifact_path}}"
+
+    factory=$(jq -r '.DelegationFactory' "$artifact")
+    recorded_ref=$(jq -r '."git-ref"' "$artifact")
+    recorded_factory_hash=$(jq -r '."factory-creation-code-hash" // empty' "$artifact")
+    recorded_delegation_hash=$(jq -r '."delegation-creation-code-hash" // empty' "$artifact")
+
+    head_ref=$(git rev-parse HEAD)
+    if [ "$recorded_ref" != "$head_ref" ]; then
+        just _warn "Artifact git-ref ($recorded_ref) differs from HEAD ($head_ref); comparing against the current checkout anyway"
+    fi
+
+    forge build --skip test --skip script > /dev/null
+
+    fail=0
+    if [ -n "$recorded_factory_hash" ]; then
+        local_factory_hash=$(cast keccak "$(forge inspect DelegationFactory bytecode)")
+        local_delegation_hash=$(cast keccak "$(forge inspect DelegationContract bytecode)")
+        if [ "$local_factory_hash" != "$recorded_factory_hash" ]; then
+            just _warn "factory-creation-code-hash mismatch: artifact $recorded_factory_hash, local build $local_factory_hash"
+            fail=1
+        fi
+        if [ "$local_delegation_hash" != "$recorded_delegation_hash" ]; then
+            just _warn "delegation-creation-code-hash mismatch: artifact $recorded_delegation_hash, local build $local_delegation_hash"
+            fail=1
+        fi
+    else
+        just _warn "Artifact has no recorded creation-code hashes; skipping the hash check"
+    fi
+
+    onchain_hash=$(cast keccak "$(cast code "$factory" --rpc-url "$RPC_URL")")
+    local_runtime_hash=$(cast keccak "$(forge inspect DelegationFactory deployedBytecode)")
+    if [ "$onchain_hash" != "$local_runtime_hash" ]; then
+        just _warn "On-chain factory bytecode at $factory differs from the current sources"
+        fail=1
+    fi
+
+    if [ "$fail" != "0" ]; then
+        exit 1
+    fi
+    just _info "Deployment matches the current checkout: artifact hashes and on-chain factory bytecode are consistent"
 
 # DelegationContract management (via cast)
 # Requires: jq

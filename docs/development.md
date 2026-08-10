@@ -82,6 +82,8 @@ git commit -m "chore: add hoodi deployment artifacts"
 
 `deploy-live` and `deploy-delegate-live`/`nominate-delegate-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
 
+`deploy-live` and `verify-live` refuse to run when the working tree has uncommitted changes. This keeps the `git-ref` recorded in the deploy artifact bound to the compiled sources. The artifact also records `factory-creation-code-hash` and `delegation-creation-code-hash`: to check that an artifact is genuine, check out the recorded `git-ref` and compare `cast keccak $(forge inspect DelegationFactory bytecode)` (and the same for `DelegationContract`) with the recorded values. `just check-deployment` automates this: it compares the recorded hashes and the on-chain factory bytecode (via `$RPC_URL`) with the current checkout. Run it from the recorded `git-ref` before publishing a factory address.
+
 ## CLI Command Reference
 
 ### Build, test, lint
@@ -112,6 +114,7 @@ slither . --config-file slither.config.json
 | `just deploy-live`                        | Deploy `DelegationFactory` to a live network, with confirmation and Etherscan verification |
 | `just deploy-live-dry`                    | Simulate a live deployment without broadcasting                                            |
 | `just verify-live`                        | Verify an already-deployed factory on Etherscan                                            |
+| `just check-deployment [artifact]`        | Check a committed deploy artifact against the current checkout and the on-chain bytecode   |
 
 ### DelegationContract deployment and management (via `cast`)
 

@@ -5,6 +5,7 @@ pragma solidity 0.8.35;
 
 import { Script } from "forge-std/Script.sol";
 
+import { DelegationContract } from "../src/DelegationContract.sol";
 import { DelegationFactory } from "../src/DelegationFactory.sol";
 
 import { JsonObj, Json } from "./utils/Json.sol";
@@ -45,6 +46,10 @@ abstract contract DeployBase is Script {
         deployJson.set("ChainId", _chainId);
         deployJson.set("DelegationFactory", address(delegationFactory));
         deployJson.set("git-ref", gitRef);
+        // Creation-code hashes bind the recorded git ref to the broadcast bytecode:
+        // check out the ref, rebuild, and compare to prove the artifact is genuine
+        deployJson.set("factory-creation-code-hash", keccak256(type(DelegationFactory).creationCode));
+        deployJson.set("delegation-creation-code-hash", keccak256(type(DelegationContract).creationCode));
         if (!vm.exists(artifactDir)) {
             vm.createDir(artifactDir, true);
         }
