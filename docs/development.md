@@ -80,7 +80,9 @@ git add artifacts/hoodi/
 git commit -m "chore: add hoodi deployment artifacts"
 ```
 
-`deploy-live` and `deploy-delegate-live`/`nominate-delegate-live`/`revoke-nomination-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
+`deploy-live` and `deploy-delegate-live`/`nominate-delegate-live`/`revoke-delegate-live`/`terminate-live` all prompt for confirmation before broadcasting, since these are real, irreversible transactions.
+
+`deploy-live` and `verify-live` refuse to run when the working tree has uncommitted changes. This keeps the `git-ref` recorded in the deploy artifact bound to the compiled sources. The artifact also records `factory-creation-code-hash` and `delegation-creation-code-hash`: to check that an artifact is genuine, check out the recorded `git-ref` and compare `cast keccak $(forge inspect DelegationFactory bytecode)` (and the same for `DelegationContract`) with the recorded values. `just check-deployment` automates this: it compares the recorded hashes and the on-chain factory bytecode (via `$RPC_URL`) with the current checkout. Run it from the recorded `git-ref` before publishing a factory address.
 
 ## CLI Command Reference
 
@@ -112,6 +114,7 @@ slither . --config-file slither.config.json
 | `just deploy-live`                        | Deploy `DelegationFactory` to a live network, with confirmation and Etherscan verification |
 | `just deploy-live-dry`                    | Simulate a live deployment without broadcasting                                            |
 | `just verify-live`                        | Verify an already-deployed factory on Etherscan                                            |
+| `just check-deployment [artifact]`        | Check a committed deploy artifact against the current checkout and the on-chain bytecode   |
 
 ### DelegationContract deployment and management (via `cast`)
 
@@ -125,8 +128,6 @@ Owner-only commands broadcast a real transaction and prompt for confirmation on 
 | `just nominate-delegate-live <contract> <newDelegate>`    | Same, on a live network                                   | Owner only   |
 | `just revoke-delegate <contract>`                         | Remove delegate access immediately (anvil)                | Owner only   |
 | `just revoke-delegate-live <contract>`                    | Same, on a live network                                   | Owner only   |
-| `just revoke-nomination <contract>`                       | Revoke currently nominated delegate (anvil)               | Owner only   |
-| `just revoke-nomination-live <contract>`                  | Same, on a live network                                   | Owner only   |
 | `just terminate <contract>`                               | Irreversibly disable the contract (anvil)                 | Owner only   |
 | `just terminate-live <contract>`                          | Same, on a live network                                   | Owner only   |
 | `just get-owner <contract> --rpc-url <url>`               | View the owner address                                    | Anyone       |

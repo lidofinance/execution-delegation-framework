@@ -31,6 +31,10 @@ library Json {
         obj.str = VM.serializeUint(obj.ref, key, value);
     }
 
+    function set(JsonObj memory obj, string memory key, bytes32 value) internal {
+        obj.str = VM.serializeBytes32(obj.ref, key, value);
+    }
+
     function set(JsonObj memory obj, string memory key, bytes memory value) internal {
         obj.str = VM.serializeBytes(obj.ref, key, value);
     }

@@ -280,73 +280,6 @@ contract DelegationContractNominateDelegateTest is DelegationContractBaseTestWit
     }
 }
 
-contract DelegationContractRevokeNominationTest is DelegationContractBaseTestWithDeployment {
-    function test_revokeNomination() public {
-        address newDelegate = nextAddress("NEW_DELEGATE");
-
-        vm.prank(owner);
-        delegationContract.nominateDelegate(newDelegate);
-
-        vm.expectEmit();
-        emit IDelegationContract.NominationRevoked(newDelegate);
-
-        vm.prank(owner);
-        delegationContract.revokeNomination();
-
-        (address pending, uint256 activeFrom) = delegationContract.getPendingDelegate();
-        assertEq(pending, address(0));
-        assertEq(activeFrom, 0);
-
-        address currentDelegate = delegationContract.getDelegate();
-        assertEq(currentDelegate, delegate, "Current delegate should remain effective after revoking nomination");
-    }
-
-    function test_revokeNomination_revertWhen_NoPendingDelegate() public {
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NoPendingDelegate.selector));
-        delegationContract.revokeNomination();
-    }
-
-    function test_revokeNomination_revertWhen_NotOwner() public {
-        address newDelegate = nextAddress("NEW_DELEGATE");
-        address notOwner = nextAddress("NOT_OWNER");
-
-        vm.prank(owner);
-        delegationContract.nominateDelegate(newDelegate);
-
-        vm.prank(notOwner);
-        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NotOwner.selector));
-        delegationContract.revokeNomination();
-    }
-
-    function test_revokeNomination_revertWhen_Terminated() public {
-        address newDelegate = nextAddress("NEW_DELEGATE");
-
-        vm.prank(owner);
-        delegationContract.nominateDelegate(newDelegate);
-
-        vm.prank(owner);
-        delegationContract.terminate();
-
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.ContractTerminated.selector));
-        delegationContract.revokeNomination();
-    }
-
-    function test_revokeNomination_revertWhen_PendingDelegateAlreadyMatured() public {
-        address newDelegate = nextAddress("NEW_DELEGATE");
-
-        vm.prank(owner);
-        delegationContract.nominateDelegate(newDelegate);
-
-        vm.warp(block.timestamp + cooldown);
-
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(IDelegationContract.NoPendingDelegate.selector));
-        delegationContract.revokeNomination();
-    }
-}
-
 contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithDeployment {
     function test_revokeDelegate_clearsCurrentImmediately() public {
         vm.expectEmit();
@@ -377,22 +310,12 @@ contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithD
         assertEq(activeFrom, 0);
     }
 
-    function test_revokeDelegate_emitsNominationRevokedForPending() public {
+    function test_revokeDelegate_onlyDelegateRevokedEmittedWithPending() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
         delegationContract.nominateDelegate(newDelegate);
 
-        vm.expectEmit();
-        emit IDelegationContract.NominationRevoked(newDelegate);
-        vm.expectEmit();
-        emit IDelegationContract.DelegateRevoked(delegate);
-
-        vm.prank(owner);
-        delegationContract.revokeDelegate();
-    }
-
-    function test_revokeDelegate_noNominationRevokedWhenNoPending() public {
         vm.recordLogs();
 
         vm.prank(owner);
@@ -401,9 +324,10 @@ contract DelegationContractRevokeDelegateTest is DelegationContractBaseTestWithD
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 1, "Only DelegateRevoked should be emitted");
         assertEq(logs[0].topics[0], IDelegationContract.DelegateRevoked.selector);
+        assertEq(address(uint160(uint256(logs[0].topics[1]))), delegate);
     }
 
-    function test_revokeDelegate_noNominationRevokedWhenPendingMatured() public {
+    function test_revokeDelegate_revokesMaturedPendingAsCurrent() public {
         address newDelegate = nextAddress("NEW_DELEGATE");
 
         vm.prank(owner);
