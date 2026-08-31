@@ -1,0 +1,7 @@
+{
+  "ChainId": 1,
+  "DelegationFactory": "0xD990770eB2B4b6062EDdB06892fF179C693b46e6",
+  "delegation-creation-code-hash": "0x5a2b70f4a86f8d4c6311c937ce10c868f237de838867c47224620c70985dd2c5",
+  "factory-creation-code-hash": "0xa3905627944a91e9fe6100a35a5a6abb6a06de0d2796170df750d4a2c7bb6c43",
+  "git-ref": "557299104ad3eb1a74198933bd016328c490e276"
+}
