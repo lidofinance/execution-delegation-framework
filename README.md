@@ -40,6 +40,10 @@ This repository implements the EDF as specified in [LIP-37](https://github.com/l
 - [Usage Guide](docs/usage.md) — deploying the `DelegationFactory`, deploying a `DelegationContract` through it, and managing delegation (nominate/revoke/terminate/views) via the `just` CLI or manually through Etherscan
 - [Development Guide](docs/development.md) — deploying/verifying the `DelegationFactory` itself and a full reference of every `just` command in this repo
 
+## Audits
+
+- [Composable Security - EDF On-chain Audit Report (August 2026)](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20EDF%20On-chain%20Audit%20Report%2008-2026.pdf)
+
 # License
 
 2026 Lido <info@lido.fi>
